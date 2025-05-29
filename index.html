@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<title>Extra Packages for OpenWrt</title>
+	
+	<link rel="icon" href="https://opkg.oldlan.ru/favicon.ico">
+	<meta name="color-scheme" content="light dark">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<style>
+		* {
+			padding: 0;
+			margin: 0;
+			box-sizing: border-box;
+		}
+
+		body {
+			font-family: Inter, system-ui, sans-serif;
+			font-size: 16px;
+			text-rendering: optimizespeed;
+			background-color: #f3f6f7;
+			min-height: 100vh;
+		}
+
+		img,
+		svg {
+			vertical-align: middle;
+			z-index: 1;
+		}
+
+		img {
+			max-width: 100%;
+			max-height: 100%;
+			border-radius: 5px;
+		}
+
+		td img {
+			max-width: 1.5em;
+			max-height: 2em;
+			object-fit: cover;
+		}
+
+		body,
+		a,
+		svg,
+		.layout.current,
+		.layout.current svg,
+		.go-up {
+			color: #333;
+			text-decoration: none;
+		}
+
+		.wrapper {
+			max-width: 1200px;
+			margin-left: auto;
+			margin-right: auto;
+		}
+
+		header,
+		.meta {
+			padding-left: 5%;
+			padding-right: 5%;
+		}
+
+		td a {
+			color: #006ed3;
+			text-decoration: none;
+		}
+
+		td a:hover {
+			color: #0095e4;
+		}
+
+		/* td a:visited {
+	color: #800080;
+}
+
+td a:visited:hover {
+	color: #b900b9;
+} */
+
+		th:first-child,
+		td:first-child {
+			width: 5%;
+		}
+
+		th:last-child,
+		td:last-child {
+			width: 5%;
+		}
+
+		.size,
+		.timestamp {
+			font-size: 14px;
+		}
+
+		.grid .size {
+			font-size: 12px;
+			margin-top: .5em;
+			color: #496a84;
+		}
+
+		header {
+			padding-top: 15px;
+			padding-bottom: 15px;
+			box-shadow: 0px 0px 20px 0px rgb(0 0 0 / 10%);
+		}
+
+		.breadcrumbs {
+			text-transform: uppercase;
+			font-size: 10px;
+			letter-spacing: 1px;
+			color: #939393;
+			margin-bottom: 5px;
+			padding-left: 3px;
+		}
+
+		h1 {
+			font-size: 20px;
+			font-family: Poppins, system-ui, sans-serif;
+			font-weight: normal;
+			white-space: nowrap;
+			overflow-x: hidden;
+			text-overflow: ellipsis;
+			color: #c5c5c5;
+		}
+
+		h1 a,
+		th a {
+			color: #000;
+		}
+
+		h1 a {
+			padding: 0 3px;
+			margin: 0 1px;
+		}
+
+		h1 a:hover {
+			background: #ffffc4;
+		}
+
+		h1 a:first-child {
+			margin: 0;
+		}
+
+		header,
+		main {
+			background-color: white;
+		}
+
+		main {
+			margin: 3em auto 0;
+			border-radius: 5px;
+			box-shadow: 0 2px 5px 1px rgb(0 0 0 / 5%);
+		}
+
+		.meta {
+			display: flex;
+			gap: 1em;
+			font-size: 14px;
+			border-bottom: 1px solid #e5e9ea;
+			padding-top: 1em;
+			padding-bottom: 1em;
+		}
+
+		#summary {
+			display: flex;
+			gap: 1em;
+			align-items: center;
+			margin-right: auto;
+		}
+
+		.filter-container {
+			position: relative;
+			display: inline-block;
+			margin-left: 1em;
+		}
+
+		#search-icon {
+			color: #777;
+			position: absolute;
+			height: 1em;
+			top: .6em;
+			left: .5em;
+		}
+
+		#filter {
+			padding: .5em 1em .5em 2.5em;
+			border: none;
+			border: 1px solid #CCC;
+			border-radius: 5px;
+			font-family: inherit;
+			position: relative;
+			z-index: 2;
+			background: none;
+		}
+
+		.layout,
+		.layout svg {
+			color: #9a9a9a;
+		}
+
+		table {
+			width: 100%;
+			border-collapse: collapse;
+		}
+
+		tbody tr,
+		tbody tr a,
+		.entry a {
+			transition: all .15s;
+		}
+
+		tbody tr:hover,
+		.grid .entry a:hover {
+			background-color: #f4f9fd;
+		}
+
+		th,
+		td {
+			text-align: left;
+		}
+
+		th {
+			position: sticky;
+			top: 0;
+			background: white;
+			white-space: nowrap;
+			z-index: 2;
+			text-transform: uppercase;
+			font-size: 14px;
+			letter-spacing: 1px;
+			padding: .75em 0;
+		}
+
+		td {
+			white-space: nowrap;
+		}
+
+		td:nth-child(2) {
+			width: 75%;
+		}
+
+		td:nth-child(2) a {
+			padding: 1em 0;
+			display: block;
+		}
+
+		td:nth-child(3),
+		th:nth-child(3) {
+			padding: 0 20px 0 20px;
+			min-width: 150px;
+		}
+
+		td .go-up {
+			text-transform: uppercase;
+			font-size: 12px;
+			font-weight: bold;
+		}
+
+		.name,
+		.go-up {
+			word-break: break-all;
+			overflow-wrap: break-word;
+			white-space: pre-wrap;
+		}
+
+		.listing .icon-tabler {
+			color: #454545;
+		}
+
+		.listing .icon-tabler-folder-filled {
+			color: #ffb900 !important;
+		}
+
+		.sizebar {
+			position: relative;
+			padding: 0.25rem 0.5rem;
+			display: flex;
+		}
+
+		.sizebar-bar {
+			background-color: #dbeeff;
+			position: absolute;
+			top: 0;
+			right: 0;
+			bottom: 0;
+			left: 0;
+			z-index: 0;
+			height: 100%;
+			pointer-events: none;
+		}
+
+		.sizebar-text {
+			position: relative;
+			z-index: 1;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+
+		.grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fill, minmax(16em, 1fr));
+			gap: 2px;
+		}
+
+		.grid .entry {
+			position: relative;
+			width: 100%;
+		}
+
+		.grid .entry a {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			padding: 1.5em;
+			height: 100%;
+		}
+
+		.grid .entry svg {
+			width: 75px;
+			height: 75px;
+		}
+
+		.grid .entry img {
+			max-height: 200px;
+			object-fit: cover;
+		}
+
+		.grid .entry .name {
+			margin-top: 1em;
+		}
+
+		footer {
+			padding: 40px 20px;
+			font-size: 12px;
+			text-align: center;
+		}
+
+		.caddy-logo {
+			display: inline-block;
+			height: 2.5em;
+			margin: 0 auto;
+		}
+
+		@media (max-width: 600px) {
+			.hideable {
+				display: none;
+			}
+
+			td:nth-child(2) {
+				width: auto;
+			}
+
+			th:nth-child(3),
+			td:nth-child(3) {
+				padding-right: 5%;
+				text-align: right;
+			}
+
+			h1 {
+				color: #000;
+			}
+
+			h1 a {
+				margin: 0;
+			}
+
+			#filter {
+				max-width: 100px;
+			}
+
+			.grid .entry {
+				max-width: initial;
+			}
+		}
+
+
+		@media (prefers-color-scheme: dark) {
+			html {
+				background: black;
+				/* overscroll */
+			}
+
+			body {
+				background: linear-gradient(180deg, rgb(34 50 66) 0%, rgb(26 31 38) 100%);
+				background-attachment: fixed;
+			}
+
+			body,
+			a,
+			svg,
+			.layout.current,
+			.layout.current svg,
+			.go-up {
+				color: #ccc;
+			}
+
+			h1 a,
+			th a {
+				color: white;
+			}
+
+			h1 {
+				color: white;
+			}
+
+			h1 a:hover {
+				background: hsl(213deg 100% 73% / 20%);
+			}
+
+			header,
+			main,
+			.grid .entry {
+				background-color: #101720;
+			}
+
+			tbody tr:hover,
+			.grid .entry a:hover {
+				background-color: #162030;
+				color: #fff;
+			}
+
+			th {
+				background-color: #18212c;
+			}
+
+			td a,
+			.listing .icon-tabler {
+				color: #abc8e3;
+			}
+
+			td a:hover,
+			td a:hover .icon-tabler {
+				color: white;
+			}
+
+			/* td a:visited {
+		color: #cd53cd;
+	}
+
+	td a:visited:hover {
+		color: #f676f6;
+	} */
+
+			#search-icon {
+				color: #7798c4;
+			}
+
+			#filter {
+				color: #ffffff;
+				border: 1px solid #29435c;
+			}
+
+			.meta {
+				border-bottom: 1px solid #222e3b;
+			}
+
+			.sizebar-bar {
+				background-color: #1f3549;
+			}
+
+			.grid .entry a {
+				background-color: #080b0f;
+			}
+
+			#Wordmark path,
+			#R path {
+				fill: #ccc !important;
+			}
+
+			#R circle {
+				stroke: #ccc !important;
+			}
+		}
+
+		.readme {
+			margin-left: 50px;
+			margin-right: 50px;
+		}
+
+		.well {
+			background-color: #e8eef4;
+			border-radius: 8px;
+			font-size: 85%;
+			line-height: 1.45;
+			overflow: auto;
+			padding: 12px;
+			max-width: 980px;
+		}
+
+		.code {
+			font-family: 'Lucida Console', 'Ubuntu Mono', Courier, monospace;
+		}
+
+		@media (prefers-color-scheme: dark) {
+			.well {
+				background-color: #090d11;
+			}
+		}
+	</style>
+</head>
+
+<body onload="initPage()">
+	<header>
+		<div class="wrapper">
+			<div class="breadcrumbs">Folder Path</div>
+			<h1>
+				<a href="https://opkg.oldlan.ru/">/</a>
+			</h1>
+		</div>
+	</header>
+	<div class="wrapper">
+		<main>
+			<div class="meta">
+				<div id="summary">
+					<span class="meta-item">
+						<b>2</b> directories
+					</span>
+					<span class="meta-item">
+						<b>1</b> file
+					</span>
+				</div>
+				<a href="javascript:queryParam(&#39;layout&#39;, &#39;&#39;)" id="layout-list" class="layoutcurrent">
+					<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-layout-list" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+						<path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+						<path d="M4 4m0 2a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z"></path>
+						<path d="M4 14m0 2a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z">
+						</path>
+					</svg>
+					List
+				</a>
+				<a href="javascript:queryParam(&#39;layout&#39;, &#39;grid&#39;)" id="layout-grid" class="layout">
+					<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-layout-grid" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+						<path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+						<path d="M4 4m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"></path>
+						<path d="M14 4m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"></path>
+						<path d="M4 14m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"></path>
+						<path d="M14 14m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"></path>
+					</svg>
+					Grid
+				</a>
+			</div>
+			<div class="listing">
+				<table aria-describedby="summary">
+					<thead>
+						<tr>
+							<th></th>
+							<th>
+								<a href="https://opkg.oldlan.ru/?sort=namedirfirst&amp;order=desc" class="icon">
+									<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-caret-up" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+										<path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+										<path d="M18 14l-6 -6l-6 6h12"></path>
+									</svg>
+								</a>
+								<a href="https://opkg.oldlan.ru/?sort=name&amp;order=asc">
+									Name
+								</a>
+
+								<div class="filter-container">
+									<svg id="search-icon" xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+										<path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+										<path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"></path>
+										<path d="M21 21l-6 -6"></path>
+									</svg>
+									<input type="text" placeholder="Search" id="filter" onkeyup="filter()">
+								</div>
+							</th>
+							<th>
+								<a href="https://opkg.oldlan.ru/?sort=size&amp;order=asc">
+									Size
+								</a>
+							</th>
+							<th class="hideable">
+								<a href="https://opkg.oldlan.ru/?sort=time&amp;order=asc">
+									Modified
+								</a>
+							</th>
+							<th class="hideable"></th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr class="file">
+							<td></td>
+							<td>
+								<a href="https://opkg.oldlan.ru/openwrt-24.10/">
+
+									<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-folder-filled" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+										<path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+										<path d="M9 3a1 1 0 0 1 .608 .206l.1 .087l2.706 2.707h6.586a3 3 0 0 1 2.995 2.824l.005 .176v8a3 3 0 0 1 -2.824 2.995l-.176 .005h-14a3 3 0 0 1 -2.995 -2.824l-.005 -.176v-11a3 3 0 0 1 2.824 -2.995l.176 -.005h4z" stroke-width="0" fill="currentColor"></path>
+									</svg>
+									<span class="name">openwrt-24.10/</span>
+								</a>
+							</td>
+							<td>—</td>
+							<td class="timestamp hideable">
+								<time datetime="2024-10-31T08:22:43Z">31.10.2024, 11:22:43</time>
+							</td>
+							<td class="hideable"></td>
+						</tr>
+						<tr class="file">
+							<td></td>
+							<td>
+								<a href="https://opkg.oldlan.ru/key-build.pub">
+
+									<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-key" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+										<path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+										<path d="M16.555 3.843l3.602 3.602a2.877 2.877 0 0 1 0 4.069l-2.643 2.643a2.877 2.877 0 0 1 -4.069 0l-.301 -.301l-6.558 6.558a2 2 0 0 1 -1.239 .578l-.175 .008h-1.172a1 1 0 0 1 -.993 -.883l-.007 -.117v-1.172a2 2 0 0 1 .467 -1.284l.119 -.13l.414 -.414h2v-2h2v-2l2.144 -2.144l-.301 -.301a2.877 2.877 0 0 1 0 -4.069l2.643 -2.643a2.877 2.877 0 0 1 4.069 0z">
+										</path>
+										<path d="M15 9h.01"></path>
+									</svg>
+									<span class="name">key-build.pub</span>
+								</a>
+							</td>
+							<td class="size" data-size="103">
+								<div class="sizebar">
+									<div class="sizebar-bar" style="width: 100%;"></div>
+									<div class="sizebar-text">
+										103 B
+									</div>
+								</div>
+							</td>
+							<td class="timestamp hideable">
+								<time datetime="2022-09-22T13:17:19Z">22.09.2022, 16:17:19</time>
+							</td>
+							<td class="hideable"></td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+			<div class="readme">
+				<br>
+				<h2>Extra Packages repo for OpenWrt 24.10 by Marvel Dronnis</h2>
+				<hr>
+				<br>
+				<p>
+					Данный репозиторий имеет мои пакеты и некоторые пакеты собранные от сообщества с разных git репозиториев.
+				</p>
+				<br><br>
+				<h3>Установка на OpenWrt</h3>
+				<hr>
+				<br>1. Добавить ключ репозитория в хранилище ключей opkg:<br><br>
+				<div class="well code ng-binding" ng-bind="command">
+					<font color="#dd4a68">wget</font>
+					<font color="#e90">https://opkg.oldlan.ru/key-build.pub</font><br><br>
+					<font color="#dd4a68">opkg-key</font>
+					<font color="#690">add</font>
+					key-build.pub
+				</div>
+				<br>2. Добавить репозиторий в список репозиториев:<br><br>
+				<div class="well code ng-binding" ng-bind="command">
+					<font color="#dd4a68">echo</font>
+					<font color="#690">"</font>src/gz openwrt_extras https://opkg.oldlan.ru/openwrt-24.10/$(. /etc/openwrt_release ; echo $DISTRIB_ARCH)<font color="#690">"</font>
+					<font color="#905">&gt;&gt;</font>
+					<font color="#e90">/etc/opkg/customfeeds.conf</font>
+				</div>
+				<br> 3. Обновите списки репозиториев:<br><br>
+				<div class="well code ng-binding" ng-bind="command">
+					<font color="#dd4a68">opkg</font> update
+				</div>
+				<br> 4. Теперь вы можете перейти в luci и устанавливать пакеты. После установки пакетов luci-app-* вам может понадобиться
+				<font color="#dd4a68">reboot</font>.<br><br>
+
+				<br> Все шаги в одну комманду:<br><br>
+				<div class="well code ng-binding" ng-bind="command">
+					<font color="#dd4a68">wget</font>
+					<font color="#e90">https://opkg.oldlan.ru/key-build.pub</font> && <font color="#dd4a68">opkg-key</font> 					<font color="#690">add</font> key-build.pub && <font color="#dd4a68">echo</font>
+					<font color="#690">"</font>src/gz openwrt_extras https://opkg.oldlan.ru/openwrt-24.10/$(. /etc/openwrt_release ; echo $DISTRIB_ARCH)<font color="#690">"</font>
+					<font color="#905">&gt;&gt;</font>
+					<font color="#e90">/etc/opkg/customfeeds.conf</font> && <font color="#dd4a68">opkg</font> update
+				</div>
+
+
+
+
+				<br>1. Add new opkg key:<br><br>
+				<div class="well code ng-binding" ng-bind="command">
+					<font color="#dd4a68">wget</font>
+					<font color="#e90">https://opkg.oldlan.ru/key-build.pub</font><br><br>
+					<font color="#dd4a68">opkg-key</font>
+					<font color="#690">add</font>
+					key-build.pub
+				</div>
+				<br>2. Add opkg repository:<br><br>
+				<div class="well code ng-binding" ng-bind="command">
+					<font color="#dd4a68">echo</font>
+					<font color="#690">"</font>src/gz openwrt_extras https://opkg.oldlan.ru/openwrt-24.10/$(. /etc/openwrt_release ; echo $DISTRIB_ARCH)<font color="#690">"</font>
+					<font color="#905">&gt;&gt;</font>
+					<font color="#e90">/etc/opkg/customfeeds.conf</font>
+				</div>
+				<br> 3. Update opkg sources:<br><br>
+				<div class="well code ng-binding" ng-bind="command">
+					<font color="#dd4a68">opkg</font> update
+				</div>
+				<br> 4. Now you can go to luci and search for packages to install. After the first installed, you need
+				to <font color="#dd4a68">reboot</font>.<br><br><br>
+
+			</div>
+		</main>
+	</div>
+
+	<footer>
+		<a rel="noopener noreferrer" href="https://github.com/sbwml/openwrt_helloworld" target="_blank">GitHub Pages</a> |
+		<a rel="noopener noreferrer" href="https://github.com/sbwml/openwrt_helloworld" target="_blank">Marvel Dronnis</a> | <span id="year"></span>
+	</footer>
+
+	<script>
+		document.getElementById('year').innerHTML = new Date().getFullYear();
+
+		const filterEl = document.getElementById('filter');
+		filterEl?.focus({ preventScroll: true });
+
+		function initPage() {
+			// populate and evaluate filter
+			if (!filterEl?.value) {
+				const filterParam = new URL(window.location.href).searchParams.get('filter');
+				if (filterParam) {
+					filterEl.value = filterParam;
+				}
+			}
+			filter();
+
+			// fill in size bars
+			let largest = 0;
+			document.querySelectorAll('.size').forEach(el => {
+				largest = Math.max(largest, Number(el.dataset.size));
+			});
+			document.querySelectorAll('.size').forEach(el => {
+				const size = Number(el.dataset.size);
+				el.querySelector('.sizebar-bar').style.width = `${size / largest * 100}%`;
+			});
+		}
+
+		function filter() {
+			if (!filterEl) return;
+			const q = filterEl.value.trim().toLowerCase();
+			document.querySelectorAll('tr.file').forEach(function (el) {
+				if (!q) {
+					el.style.display = '';
+					return;
+				}
+				const nameEl = el.querySelector('.name');
+				const nameVal = nameEl.textContent.trim().toLowerCase();
+				if (nameVal.indexOf(q) !== -1) {
+					el.style.display = '';
+				} else {
+					el.style.display = 'none';
+				}
+			});
+		}
+
+		function queryParam(k, v) {
+			const qs = new URLSearchParams(window.location.search);
+			if (!v) {
+				qs.delete(k);
+			} else {
+				qs.set(k, v);
+			}
+			const qsStr = qs.toString();
+			if (qsStr) {
+				window.location.search = qsStr;
+			} else {
+				window.location = window.location.pathname;
+			}
+		}
+
+		function localizeDatetime(e, index, ar) {
+			if (e.textContent === undefined) {
+				return;
+			}
+			var d = new Date(e.getAttribute('datetime'));
+			if (isNaN(d)) {
+				d = new Date(e.textContent);
+				if (isNaN(d)) {
+					return;
+				}
+			}
+			e.textContent = d.toLocaleString();
+		}
+		var timeList = Array.prototype.slice.call(document.getElementsByTagName("time"));
+		timeList.forEach(localizeDatetime);
+	</script>
+
+
+
+</body></html>
