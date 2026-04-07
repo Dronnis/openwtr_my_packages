@@ -202,7 +202,24 @@ export class ContentLoader {
             }
             
             loadingManager.completeTask(id, true);
-            return `<div class="markdown-content">${html}</div>`;
+            
+            // Добавляем класс в зависимости от типа контента
+            let contentTypeClass = '';
+            switch (type) {
+                case 'header':
+                    contentTypeClass = 'header-content';
+                    break;
+                case 'footer':
+                    contentTypeClass = 'footer-content';
+                    break;
+                case 'readme':
+                    contentTypeClass = 'readme-content';
+                    break;
+                default:
+                    contentTypeClass = '';
+            }
+            
+            return `<div class="markdown-content ${contentTypeClass}">${html}</div>`;
         } catch (error) {
             console.error(`Error loading markdown ${url}:`, error);
             loadingManager.completeTask(id, false);

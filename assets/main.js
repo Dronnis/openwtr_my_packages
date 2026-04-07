@@ -148,9 +148,6 @@ class App {
     }
 
     setupMainPage() {
-        const breadcrumbDiv = document.querySelector('.breadcrumbs');
-        if (breadcrumbDiv) breadcrumbDiv.style.display = 'none';
-        
         const h1 = document.querySelector('h1');
         if (h1) {
             h1.innerHTML = '<a href="/">D-WRT</a>';
@@ -162,9 +159,6 @@ class App {
     }
 
     setupFileManagerEvents() {
-        const breadcrumbDiv = document.querySelector('.breadcrumbs');
-        if (breadcrumbDiv) breadcrumbDiv.style.display = 'none';
-        
         const meta = document.querySelector('.meta');
         if (meta) meta.style.display = 'flex';
     }

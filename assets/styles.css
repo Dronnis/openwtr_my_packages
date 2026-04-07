@@ -131,25 +131,6 @@ main {
     overflow-x: auto;
 }
 
-/* Breadcrumbs */
-.breadcrumbs {
-    padding: 16px 24px 0 24px;
-    font-size: 12px;
-    color: #8a9bb0;
-    border-bottom: 1px solid #eef2f6;
-    padding-bottom: 12px;
-}
-
-.breadcrumbs a {
-    color: #5a6e85;
-    text-decoration: none;
-    transition: color 0.2s;
-}
-
-.breadcrumbs a:hover {
-    color: #0066cc;
-}
-
 /* Meta Bar */
 .meta {
     display: flex;
@@ -568,18 +549,92 @@ main {
 .message-warning { border-left-color: #f59e0b; background: #fffbeb; }
 .message-error { border-left-color: #ef4444; background: #fef2f2; }
 
-/* Markdown Content */
+/* ============================================
+   ВЫДЕЛЕНИЕ БЛОКОВ header, footer, readme
+   ============================================ */
+
+/* Блок header.md - вверху страницы */
+.markdown-content.header-content {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border-left: 4px solid #0284c7;
+    border-right: none;
+    border-top: none;
+    border-bottom: 1px solid #bae6fd;
+    margin: 0;
+    padding: 24px 28px;
+}
+
+.markdown-content.header-content h1:first-child {
+    margin-top: 0;
+}
+
+.markdown-content.header-content h1,
+.markdown-content.header-content h2,
+.markdown-content.header-content h3 {
+    color: #0369a1;
+}
+
+/* Блок readme.md - перед списком файлов */
+.markdown-content.readme-content {
+    background: #f8fafc;
+    border-left: 4px solid #64748b;
+    border-right: none;
+    border-top: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
+    margin: 0;
+    padding: 24px 28px;
+}
+
+.markdown-content.readme-content h1:first-child {
+    margin-top: 0;
+}
+
+/* Блок footer.md - внизу страницы */
+.markdown-content.footer-content {
+    background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+    border-left: 4px solid #475569;
+    border-right: none;
+    border-top: 1px solid #cbd5e1;
+    border-bottom: none;
+    margin: 0;
+    padding: 20px 28px;
+    font-size: 14px;
+    color: #334155;
+}
+
+.markdown-content.footer-content h1,
+.markdown-content.footer-content h2,
+.markdown-content.footer-content h3 {
+    color: #1e293b;
+    font-size: 1.2em;
+}
+
+/* Блок changelog */
+.changelog-preview {
+    background: #fffbeb;
+    border-left: 4px solid #f59e0b;
+    border-right: none;
+    border-top: 1px solid #fde68a;
+    border-bottom: 1px solid #fde68a;
+    margin: 0;
+    padding: 20px 28px;
+}
+
+.changelog-preview h2 {
+    color: #b45309;
+    font-size: 1.1em;
+    margin-top: 0;
+    margin-bottom: 16px;
+}
+
+/* Общие стили для markdown контента */
 .markdown-content {
     line-height: 1.6;
-    padding: 24px;
-    font-size: 14px;
 }
 
 .markdown-content h1 {
     font-size: 26px;
     margin-bottom: 20px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid #eef2f6;
     font-weight: 600;
 }
 
@@ -600,7 +655,7 @@ main {
 }
 
 .markdown-content code {
-    background: #f1f5f9;
+    background: rgba(0, 0, 0, 0.05);
     padding: 2px 6px;
     font-family: monospace;
     font-size: 13px;
@@ -653,27 +708,7 @@ main {
     font-weight: 600;
 }
 
-/* Readme Section */
-.readme {
-    padding: 24px;
-    border-top: 1px solid #eef2f6;
-    margin-top: 0;
-}
-
-/* Changelog Preview */
-.changelog-preview {
-    padding: 24px;
-    border-bottom: 1px solid #eef2f6;
-    background: #fafcfd;
-}
-
-.changelog-preview h2 {
-    font-size: 17px;
-    margin-bottom: 16px;
-    font-weight: 600;
-}
-
-/* Footer */
+/* Footer (сайта) */
 footer {
     padding: 28px 24px;
     text-align: center;
@@ -886,6 +921,13 @@ footer {
     #filter {
         width: 100%;
     }
+    
+    .markdown-content.header-content,
+    .markdown-content.readme-content,
+    .markdown-content.footer-content,
+    .changelog-preview {
+        padding: 16px 20px;
+    }
 }
 
 @media (max-width: 600px) {
@@ -901,8 +943,7 @@ footer {
 }
 
 /* ============================================
-   DEEPSEEK-STYLE DARK THEME
-   Minimal, Flat, High Contrast
+   DARK THEME
    ============================================ */
 @media (prefers-color-scheme: dark) {
     body {
@@ -948,18 +989,6 @@ footer {
     main {
         background-color: #161b22;
         border-color: #21262d;
-    }
-    
-    .breadcrumbs {
-        border-bottom-color: #21262d;
-    }
-    
-    .breadcrumbs a {
-        color: #8b949e;
-    }
-    
-    .breadcrumbs a:hover {
-        color: #58a6ff;
     }
     
     .meta {
@@ -1122,12 +1151,48 @@ footer {
     .message-warning { background: #2a1a0a; border-left-color: #f0883e; }
     .message-error { background: #2a0a0a; border-left-color: #f85149; }
     
-    .markdown-content {
+    /* Dark theme для выделенных блоков */
+    .markdown-content.header-content {
+        background: linear-gradient(135deg, #0a1a2a 0%, #0f212e 100%);
+        border-left-color: #0284c7;
+        border-bottom-color: #1f3a4a;
+    }
+    
+    .markdown-content.header-content h1,
+    .markdown-content.header-content h2,
+    .markdown-content.header-content h3 {
+        color: #7dd3fc;
+    }
+    
+    .markdown-content.readme-content {
+        background: #0d1117;
+        border-left-color: #8b949e;
+        border-top-color: #21262d;
+        border-bottom-color: #21262d;
+    }
+    
+    .markdown-content.footer-content {
+        background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+        border-left-color: #8b949e;
+        border-top-color: #21262d;
         color: #c9d1d9;
     }
     
-    .markdown-content h1 {
-        border-bottom-color: #21262d;
+    .markdown-content.footer-content h1,
+    .markdown-content.footer-content h2,
+    .markdown-content.footer-content h3 {
+        color: #e6edf3;
+    }
+    
+    .changelog-preview {
+        background: #1a1a0a;
+        border-left-color: #f0883e;
+        border-top-color: #3a3a1a;
+        border-bottom-color: #3a3a1a;
+    }
+    
+    .changelog-preview h2 {
+        color: #f0883e;
     }
     
     .markdown-content code {
@@ -1152,15 +1217,6 @@ footer {
     
     .markdown-content th {
         background: #0d1117;
-    }
-    
-    .readme {
-        border-top-color: #21262d;
-    }
-    
-    .changelog-preview {
-        background: #0d1117;
-        border-bottom-color: #21262d;
     }
     
     footer {
@@ -1237,4 +1293,3 @@ footer {
         border-top-color: #c9d1d9;
     }
 }
-
