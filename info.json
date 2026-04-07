@@ -32,11 +32,11 @@
     },
     "/releases/25.12.2/targets": {
         "messages": {
-          "notice": ".notice.md",
-          "info": ".info.md",
-          "success": ".success.md",
-          "warning": ".warning.md",
-          "error": ".error.md"
+          "notice": "notice.md",
+          "info": "info.md",
+          "success": "success.md",
+          "warning": "warning.md",
+          "error": "error.md"
         }
     },
     "/releases/25.12.2/targets/x86/64": {
