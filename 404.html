@@ -1,22 +1,42 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <title>Redirecting...</title>
-  <script>
-    // GitHub Pages отдаёт 404 для несуществующих файлов
-    // Перенаправляем на главный index.html с путём в hash
-    const path = window.location.pathname
-      .replace(/\/+$/, '')           // убираем конечные /
-      .replace(/^\/?[^\/]+\/?/, ''); // убираем /репозиторий/
-    
-    if (path && !path.match(/\.[^\/]+$/)) { // если не файл с расширением
-      const target = '/index.html#/' + path.replace(/^\//, '');
-      location.replace(target);
-    }
-  </script>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Navigation - Extra Packages</title>
+    <link rel="icon" href="/favicon.ico">
+    <meta name="color-scheme" content="light dark">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/assets/styles.css">
 </head>
 <body>
-  <p>🔗 Перенаправление... <a href="/index.html">Если не сработало, нажмите сюда</a></p>
+    <header>
+        <div class="wrapper">
+            <div class="breadcrumbs">Folder Path</div>
+            <h1>
+                <a href="/">/</a>
+            </h1>
+        </div>
+    </header>
+    <div class="wrapper">
+        <main>
+            <!-- Content will be dynamically loaded -->
+        </main>
+    </div>
+    <footer>
+        <a rel="noopener noreferrer" href="#" target="_blank">GitHub Pages</a> |
+        <a rel="noopener noreferrer" href="#" target="_blank">Your Name</a> | 
+        <span id="year"></span>
+    </footer>
+    <script src="/assets/script.js"></script>
+    <script>
+        // Extract path from current URL
+        const path = window.location.pathname;
+        // Redirect to main handler with path parameter
+        if (path !== '/' && path !== '/index.html' && !path.includes('/assets/')) {
+            // For GitHub Pages 404 handling, we need to use the path as is
+            window.appCurrentPath = path.substring(1); // Remove leading slash
+        }
+        initPage();
+    </script>
 </body>
 </html>
