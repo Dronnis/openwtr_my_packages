@@ -9,16 +9,16 @@
       "quickLinks": [
         { "label": "📦 Все релизы", "path": "releases/" },
         { "label": "🔑 Ключ репозитория", "path": "key-build.pub", "download": true },
-        { "label": "📖 GitHub", "path": "https://github.com/Dronnis/kwrt" },
-        { "label": "⭐ Star на GitHub", "path": "https://github.com/Dronnis/kwrt" }
+        { "label": "📖 Документация", "path": "https://github.com/Dronnis/kwrt/wiki" },
+        { "label": "💬 Поддержка", "path": "https://t.me/username" }
       ]
     },
     "footer": {
       "links": [
         { "label": "GitHub", "url": "https://github.com/Dronnis/kwrt" },
-        { "label": "Issues", "url": "https://github.com/Dronnis/kwrt/issues" },
-        { "label": "Documentation", "url": "https://github.com/Dronnis/kwrt/wiki" },
-        { "label": "Releases", "url": "https://github.com/Dronnis/kwrt/releases" }
+        { "label": "Telegram", "url": "https://t.me/username" },
+        { "label": "Documentation", "url": "https://wiki.example.com" },
+        { "label": "Issues", "url": "https://github.com/Dronnis/kwrt/issues" }
       ]
     }
   },
