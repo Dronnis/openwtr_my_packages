@@ -150,7 +150,6 @@ class App {
         const h1 = document.querySelector('h1');
         if (h1) {
             h1.innerHTML = '<a href="/">D-WRT</a>';
-            h1.style.fontSize = '24px';
         }
         
         const meta = document.querySelector('.meta');
