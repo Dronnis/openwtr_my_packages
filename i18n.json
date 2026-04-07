@@ -1,7 +1,7 @@
 {
   "ru": {
     "navigation": "Навигация",
-    "home": "Главная",
+    "home": "D-WRT",
     "repository_home": "Домашняя страница репозитория",
     "directories": "папок",
     "files": "файлов",
@@ -31,7 +31,7 @@
   },
   "en": {
     "navigation": "Navigation",
-    "home": "Home",
+    "home": "D-WRT",
     "repository_home": "Repository Home",
     "directories": "directories",
     "files": "files",
