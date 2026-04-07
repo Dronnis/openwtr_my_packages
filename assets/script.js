@@ -2,7 +2,9 @@
 window.app = {
     indexData: null,
     currentPath: '',
-    config: null
+    config: null,
+    currentSort: 'name',
+    currentOrder: 'asc'
 };
 
 // Show progress with spinner
@@ -41,6 +43,16 @@ function hideProgress() {
     }
 }
 
+// Check if file exists on server
+async function fileExists(url) {
+    try {
+        const response = await fetch(url, { method: 'HEAD' });
+        return response.ok;
+    } catch {
+        return false;
+    }
+}
+
 // Load index.json
 async function loadIndex() {
     showProgress('Loading repository index...');
@@ -71,7 +83,6 @@ async function loadIndex() {
 function getNodeInfo(path) {
     if (!window.app.indexData) return null;
     
-    // Remove leading slash, but keep empty string for root
     const cleanPath = path.replace(/^\/+/, '');
     if (!cleanPath) return { type: 'root' };
     
@@ -89,18 +100,16 @@ function getNodeInfo(path) {
     return current.__INFO__ || (current.type ? current : null);
 }
 
-// Get folder configuration (header, footer, notice, etc.)
+// Get folder configuration
 function getFolderConfig(path) {
     if (!window.app.config || !window.app.config.folders) return null;
     
     const cleanPath = path.replace(/^\/+|\/+$/g, '');
     
-    // Try exact match
     if (window.app.config.folders[cleanPath]) {
         return window.app.config.folders[cleanPath];
     }
     
-    // Try parent paths
     const parts = cleanPath.split('/');
     for (let i = parts.length; i > 0; i--) {
         const parentPath = parts.slice(0, i).join('/');
@@ -118,7 +127,6 @@ function getChildren(path) {
     
     const cleanPath = path.replace(/^\/+/, '');
     if (!cleanPath) {
-        // Return root files
         return window.app.indexData.files;
     }
     
@@ -133,7 +141,6 @@ function getChildren(path) {
         }
     }
     
-    // Filter out __INFO__ and return the rest
     const children = {};
     for (const [key, value] of Object.entries(current)) {
         if (key !== '__INFO__') {
@@ -144,14 +151,56 @@ function getChildren(path) {
     return children;
 }
 
-// Check if URL exists (for markdown files)
-async function urlExists(url) {
-    try {
-        const response = await fetch(url, { method: 'HEAD' });
-        return response.ok;
-    } catch {
-        return false;
+// Sort items
+function sortItems(items, sortBy, order) {
+    const entries = Object.entries(items);
+    
+    entries.sort((a, b) => {
+        const [nameA, dataA] = a;
+        const [nameB, dataB] = b;
+        
+        const infoA = dataA.__INFO__ || dataA;
+        const infoB = dataB.__INFO__ || dataB;
+        
+        const isDirA = dataA.type === 'dir' || infoA.type === 'dir';
+        const isDirB = dataB.type === 'dir' || infoB.type === 'dir';
+        
+        // Directories always come first (except when sorting by name with dirs first)
+        if (sortBy !== 'name') {
+            if (isDirA && !isDirB) return -1;
+            if (!isDirA && isDirB) return 1;
+        }
+        
+        let comparison = 0;
+        
+        switch (sortBy) {
+            case 'name':
+                comparison = nameA.localeCompare(nameB);
+                break;
+            case 'size':
+                const sizeA = infoA.size || 0;
+                const sizeB = infoB.size || 0;
+                comparison = sizeA - sizeB;
+                break;
+            case 'date':
+                const dateA = infoA.date || 0;
+                const dateB = infoB.date || 0;
+                comparison = dateA - dateB;
+                break;
+            default:
+                comparison = nameA.localeCompare(nameB);
+        }
+        
+        return order === 'asc' ? comparison : -comparison;
+    });
+    
+    // Convert back to object
+    const sorted = {};
+    for (const [key, value] of entries) {
+        sorted[key] = value;
     }
+    
+    return sorted;
 }
 
 // Render markdown with existence check
@@ -159,14 +208,12 @@ async function renderMarkdown(url, silent = true) {
     if (!url) return null;
     
     try {
-        // Check if file exists first
-        const exists = await urlExists(url);
+        const exists = await fileExists(url);
         if (!exists) return null;
         
         const response = await fetch(url);
         const text = await response.text();
         
-        // Simple markdown to HTML conversion
         let html = text
             .replace(/^# (.*$)/gm, '<h1>$1</h1>')
             .replace(/^## (.*$)/gm, '<h2>$1</h2>')
@@ -201,11 +248,17 @@ function formatSize(bytes) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
+// Format date
+function formatDate(timestamp) {
+    if (!timestamp) return '—';
+    const date = new Date(timestamp * 1000);
+    return date.toLocaleString();
+}
+
 // Copy to clipboard
 async function copyToClipboard(text, element) {
     try {
         await navigator.clipboard.writeText(text);
-        // Show temporary tooltip
         const originalText = element.textContent;
         element.textContent = '✓ Copied!';
         element.style.color = '#4caf50';
@@ -215,7 +268,6 @@ async function copyToClipboard(text, element) {
         }, 1500);
     } catch (err) {
         console.error('Failed to copy:', err);
-        // Fallback
         const textarea = document.createElement('textarea');
         textarea.value = text;
         document.body.appendChild(textarea);
@@ -231,14 +283,7 @@ async function copyToClipboard(text, element) {
     }
 }
 
-// Format date
-function formatDate(timestamp) {
-    if (!timestamp) return '—';
-    const date = new Date(timestamp * 1000);
-    return date.toLocaleString();
-}
-
-// Get icon based on file type (simplified SVG)
+// Get icon based on file type
 function getIcon(type, iconName) {
     if (type === 'dir') {
         return `<svg class="icon icon-tabler icon-tabler-folder-filled" width="20" height="20" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="currentColor"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 3a1 1 0 0 1 .608 .206l.1 .087l2.706 2.707h6.586a3 3 0 0 1 2.995 2.824l.005 .176v8a3 3 0 0 1 -2.824 2.995l-.176 .005h-14a3 3 0 0 1 -2.995 -2.824l-.005 -.176v-11a3 3 0 0 1 2.824 -2.995l.176 -.005h4z"/></svg>`;
@@ -256,7 +301,6 @@ function getIcon(type, iconName) {
         return `<svg class="icon icon-tabler" width="20" height="20" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M16.555 3.843l3.602 3.602a2.877 2.877 0 0 1 0 4.069l-2.643 2.643a2.877 2.877 0 0 1 -4.069 0l-.301 -.301l-6.558 6.558a2 2 0 0 1 -1.239 .578l-.175 .008h-1.172a1 1 0 0 1 -.993 -.883l-.007 -.117v-1.172a2 2 0 0 1 .467 -1.284l.119 -.13l.414 -.414h2v-2h2v-2l2.144 -2.144l-.301 -.301a2.877 2.877 0 0 1 0 -4.069l2.643 -2.643a2.877 2.877 0 0 1 4.069 0zM15 9h.01"/></svg>`;
     }
     
-    // Default file icon
     return `<svg class="icon icon-tabler" width="20" height="20" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 4h4l3 3h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="M9 12h6"/><path d="M12 9v6"/></svg>`;
 }
 
@@ -275,19 +319,21 @@ function buildBreadcrumbs(path) {
     return breadcrumbs;
 }
 
-// Render file listing for directory views
-// Render file listing for directory views (fixed alignment)
+// Render file listing with sorting
 function renderListing(items, currentPath) {
     const tbody = document.querySelector('#file-listing tbody');
     if (!tbody) return;
     
+    // Apply sorting
+    const sortedItems = sortItems(items, window.app.currentSort, window.app.currentOrder);
+    
     tbody.innerHTML = '';
     
-    // Separate directories and files
+    // Separate directories and files (already sorted)
     const dirs = {};
     const files = {};
     
-    for (const [name, data] of Object.entries(items)) {
+    for (const [name, data] of Object.entries(sortedItems)) {
         if (name === '__INFO__') continue;
         const isDir = data.type === 'dir' || data.__INFO__?.type === 'dir';
         if (isDir) {
@@ -352,42 +398,67 @@ function renderListing(items, currentPath) {
         tbody.appendChild(row);
     }
     
-    // Add files
+    // Add files and verify they exist on server
     for (const [name, data] of Object.entries(files)) {
         const info = data.__INFO__ || data;
         const filePath = currentPath === '/' ? `/${name}` : `${currentPath}/${name}`;
         const size = info.size || 0;
         const sha256 = info.sha256sum || '';
         
-        const row = document.createElement('tr');
-        row.className = 'file';
-        row.innerHTML = `
-            <td class="icon-cell">
-                ${getIcon('file', info.icon)}
-            </td>
-            <td class="name-cell">
-                <a href="${filePath}" ${sha256 ? `download="${name}"` : ''}>
-                    <span class="name">${name}</span>
-                </a>
-            </td>
-            <td class="size-cell" data-size="${size}">
-                <div class="sizebar">
-                    <div class="sizebar-bar"></div>
-                    <div class="sizebar-text">${formatSize(size)}</div>
-                </div>
-            </td>
-            <td class="checksum-cell">
-                ${sha256 ? `<span class="sha256-hash" onclick="copyToClipboard('${sha256}', this)" title="Click to copy SHA256">${sha256.substring(0, 16)}...</span>` : '—'}
-            </td>
-            <td class="timestamp-cell hideable">
-                <time datetime="${new Date((info.date || 0) * 1000).toISOString()}">${formatDate(info.date)}</time>
-            </td>
-        `;
-        tbody.appendChild(row);
+        // Check if file exists on server
+        const exists = await fileExists(filePath);
+        
+        if (!exists) {
+            // File doesn't exist on server - show as 404
+            const row = document.createElement('tr');
+            row.className = 'file missing';
+            row.innerHTML = `
+                <td class="icon-cell">
+                    ${getIcon('file', info.icon)}
+                </td>
+                <td class="name-cell">
+                    <span class="name missing-file">${name}</span>
+                    <span class="missing-badge">(404 - Not Found)</span>
+                </td>
+                <td class="size-cell">—</td>
+                <td class="checksum-cell">—</td>
+                <td class="timestamp-cell hideable">—</td>
+            `;
+            tbody.appendChild(row);
+        } else {
+            // File exists - show normal row
+            const row = document.createElement('tr');
+            row.className = 'file';
+            row.innerHTML = `
+                <td class="icon-cell">
+                    ${getIcon('file', info.icon)}
+                </td>
+                <td class="name-cell">
+                    <a href="${filePath}" ${sha256 ? `download="${name}"` : ''}>
+                        <span class="name">${name}</span>
+                    </a>
+                </td>
+                <td class="size-cell" data-size="${size}">
+                    <div class="sizebar">
+                        <div class="sizebar-bar"></div>
+                        <div class="sizebar-text">${formatSize(size)}</div>
+                    </div>
+                </td>
+                <td class="checksum-cell">
+                    ${sha256 ? `<span class="sha256-hash" onclick="copyToClipboard('${sha256}', this)" title="Click to copy SHA256">${sha256.substring(0, 16)}...</span>` : '—'}
+                </td>
+                <td class="timestamp-cell hideable">
+                    <time datetime="${new Date((info.date || 0) * 1000).toISOString()}">${formatDate(info.date)}</time>
+                </td>
+            `;
+            tbody.appendChild(row);
+        }
     }
     
     // Update size bars
     updateSizeBars();
+    // Update sort indicators
+    updateSortIndicators();
 }
 
 function updateSizeBars() {
@@ -410,22 +481,50 @@ function updateSizeBars() {
     });
 }
 
-function updateSizeBars() {
-    let largest = 0;
-    document.querySelectorAll('.size').forEach(el => {
-        const size = parseInt(el.dataset.size);
-        if (size && size > largest) largest = size;
-    });
-    document.querySelectorAll('.size').forEach(el => {
-        const size = parseInt(el.dataset.size);
-        const bar = el.querySelector('.sizebar-bar');
-        if (bar && largest > 0 && size) {
-            bar.style.width = `${(size / largest) * 100}%`;
+function updateSortIndicators() {
+    // Remove existing indicators
+    document.querySelectorAll('.sort-indicator').forEach(el => el.remove());
+    
+    const headers = {
+        name: document.querySelector('.sort-name'),
+        size: document.querySelector('.sort-size'),
+        date: document.querySelector('.sort-date')
+    };
+    
+    for (const [key, header] of Object.entries(headers)) {
+        if (header && window.app.currentSort === key) {
+            const indicator = document.createElement('span');
+            indicator.className = 'sort-indicator';
+            indicator.textContent = window.app.currentOrder === 'asc' ? ' ↑' : ' ↓';
+            header.appendChild(indicator);
         }
-    });
+    }
 }
 
-// Render main page (index.html)
+// Change sort
+function changeSort(sortBy) {
+    if (window.app.currentSort === sortBy) {
+        // Toggle order
+        window.app.currentOrder = window.app.currentOrder === 'asc' ? 'desc' : 'asc';
+    } else {
+        window.app.currentSort = sortBy;
+        window.app.currentOrder = 'asc';
+    }
+    
+    // Re-render current view
+    const currentPath = window.location.pathname;
+    if (currentPath === '/' || currentPath === '/index.html') {
+        // Main page doesn't have listing
+        return;
+    }
+    
+    const children = getChildren(currentPath);
+    if (children) {
+        renderListing(children, currentPath);
+    }
+}
+
+// Render main page
 async function renderMainPage() {
     const main = document.querySelector('main');
     if (!main) return;
@@ -436,7 +535,6 @@ async function renderMainPage() {
         <div class="main-content">
     `;
     
-    // Add latest release section
     if (config?.mainPage?.latestRelease) {
         const latestPath = config.mainPage.latestRelease;
         const latestNode = getNodeInfo(latestPath);
@@ -446,19 +544,23 @@ async function renderMainPage() {
             const downloadUrl = `${latestPath}/${latestInfo.downloadFile}`;
             const versionName = latestPath.split('/').pop();
             
-            html += `
-                <div class="latest-release-banner">
-                    <h2>🎉 Latest Release: ${versionName}</h2>
-                    <p>Download the latest firmware image for your device</p>
-                    <a href="${downloadUrl}" class="download-btn" download>
-                        ⬇️ Download ${latestInfo.downloadFile}
-                    </a>
-                </div>
-            `;
+            // Check if download file exists
+            const exists = await fileExists(downloadUrl);
+            
+            if (exists) {
+                html += `
+                    <div class="latest-release-banner">
+                        <h2>🎉 Latest Release: ${versionName}</h2>
+                        <p>Download the latest firmware image for your device</p>
+                        <a href="${downloadUrl}" class="download-btn" download>
+                            ⬇️ Download ${latestInfo.downloadFile}
+                        </a>
+                    </div>
+                `;
+            }
         }
     }
     
-    // Add changelog if enabled
     if (config?.mainPage?.showChangelog && config?.mainPage?.changelogFile) {
         const changelogHtml = await renderMarkdown(config.mainPage.changelogFile);
         if (changelogHtml) {
@@ -471,7 +573,6 @@ async function renderMainPage() {
         }
     }
     
-    // Add quick links
     if (config?.mainPage?.quickLinks?.length) {
         html += `<div class="quick-links">
             <h3>Quick Links</h3>
@@ -484,35 +585,43 @@ async function renderMainPage() {
     }
     
     html += `</div>`;
-    
     main.innerHTML = html;
 }
 
-// Render folder page (for navigation)
+// Render folder page
 async function renderFolderPage(path) {
     const main = document.querySelector('main');
     if (!main) return;
     
-    // Check if path exists in index
     const nodeInfo = getNodeInfo(path);
     if (!nodeInfo) {
         main.innerHTML = `
             <div class="empty-state">
                 <h2>404 - Path Not Found</h2>
-                <p>The requested path "${path}" does not exist in the repository.</p>
+                <p>The requested path "${path}" does not exist in the repository index.</p>
                 <p><a href="/">← Back to Home</a></p>
             </div>
         `;
         return;
     }
     
-    // Check if it's a file (not directory)
     if (nodeInfo.type === 'file' || (nodeInfo.type !== 'dir' && !nodeInfo.__INFO__)) {
-        window.location.href = path;
+        // Check if file actually exists
+        const exists = await fileExists(path);
+        if (exists) {
+            window.location.href = path;
+        } else {
+            main.innerHTML = `
+                <div class="empty-state">
+                    <h2>404 - File Not Found</h2>
+                    <p>The file "${path}" is listed in index but does not exist on server.</p>
+                    <p><a href="/">← Back to Home</a></p>
+                </div>
+            `;
+        }
         return;
     }
     
-    // Get children (directory contents)
     const children = getChildren(path);
     if (!children || Object.keys(children).length === 0) {
         main.innerHTML = `
@@ -525,10 +634,8 @@ async function renderFolderPage(path) {
         return;
     }
     
-    // Get folder config
     const folderConfig = getFolderConfig(path);
     
-    // Build HTML with fixed table structure
     let html = `
         <div class="meta">
             <div id="summary">
@@ -558,24 +665,20 @@ async function renderFolderPage(path) {
         </div>
     `;
     
-    // Add notice if exists
     if (folderConfig?.notice) {
         html += `<div class="notice">${folderConfig.notice}</div>`;
     }
     
-    // Add header if exists
     if (folderConfig?.header) {
         const headerHtml = await renderMarkdown(folderConfig.header);
         if (headerHtml) html += headerHtml;
     }
     
-    // Add changelog if exists
     if (folderConfig?.changelog) {
         const changelogHtml = await renderMarkdown(folderConfig.changelog);
         if (changelogHtml) html += `<div class="changelog-preview">${changelogHtml}</div>`;
     }
     
-    // Add file listing with fixed columns
     html += `
         <div class="listing">
             <div class="filter-bar">
@@ -592,10 +695,16 @@ async function renderFolderPage(path) {
                 <thead>
                     <tr>
                         <th class="icon-column"></th>
-                        <th class="name-column">Name</th>
-                        <th class="size-column">Size</th>
+                        <th class="name-column">
+                            <a href="javascript:void(0)" onclick="changeSort('name')" class="sort-name">Name</a>
+                        </th>
+                        <th class="size-column">
+                            <a href="javascript:void(0)" onclick="changeSort('size')" class="sort-size">Size</a>
+                        </th>
                         <th class="checksum-column">SHA256</th>
-                        <th class="timestamp-column hideable">Modified</th>
+                        <th class="timestamp-column hideable">
+                            <a href="javascript:void(0)" onclick="changeSort('date')" class="sort-date">Modified</a>
+                        </th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -603,13 +712,11 @@ async function renderFolderPage(path) {
         </div>
     `;
     
-    // Add readme if exists
     if (folderConfig?.readme) {
         const readmeHtml = await renderMarkdown(folderConfig.readme);
         if (readmeHtml) html += `<div class="readme">${readmeHtml}</div>`;
     }
     
-    // Add footer if exists
     if (folderConfig?.footer) {
         const footerHtml = await renderMarkdown(folderConfig.footer);
         if (footerHtml) html += footerHtml;
@@ -617,10 +724,8 @@ async function renderFolderPage(path) {
     
     main.innerHTML = html;
     
-    // Render the listing
-    renderListing(children, path);
+    await renderListing(children, path);
     
-    // Update summary counts
     let dirCount = 0, fileCount = 0;
     for (const [name, data] of Object.entries(children)) {
         if (name === '__INFO__') continue;
@@ -638,15 +743,12 @@ async function renderFolderPage(path) {
 
 // Main initialization
 async function initPage() {
-    // Load index data
     await loadIndex();
     
-    // Update page title
     if (window.app.config?.title) {
         document.title = window.app.config.title;
     }
     
-    // Update favicon
     if (window.app.config?.favicon) {
         const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
         link.type = 'image/x-icon';
@@ -655,17 +757,13 @@ async function initPage() {
         document.getElementsByTagName('head')[0].appendChild(link);
     }
     
-    // Get current path from browser URL
     let currentPath = window.location.pathname;
     
-    // Remove trailing slash for consistency
     if (currentPath.endsWith('/') && currentPath !== '/') {
         currentPath = currentPath.slice(0, -1);
     }
     
-    // Check if we're on index.html or root
     if (currentPath === '/' || currentPath === '/index.html') {
-        // Update header for main page
         const breadcrumbDiv = document.querySelector('.breadcrumbs');
         if (breadcrumbDiv) {
             breadcrumbDiv.innerHTML = 'Repository Home';
@@ -676,11 +774,9 @@ async function initPage() {
         }
         await renderMainPage();
     } else {
-        // Check if path exists in index
         const nodeInfo = getNodeInfo(currentPath);
         
         if (!nodeInfo) {
-            // Real 404 - show error
             const main = document.querySelector('main');
             if (main) {
                 main.innerHTML = `
@@ -694,7 +790,6 @@ async function initPage() {
             return;
         }
         
-        // Update breadcrumbs in header
         const breadcrumbs = buildBreadcrumbs(currentPath);
         const breadcrumbDiv = document.querySelector('.breadcrumbs');
         if (breadcrumbDiv) {
@@ -710,22 +805,18 @@ async function initPage() {
             ).join('');
         }
         
-        // Render folder page
         await renderFolderPage(currentPath);
     }
     
-    // Initialize UI
     initializeUI();
 }
 
 function initializeUI() {
-    // Set year in footer
     const yearSpan = document.getElementById('year');
     if (yearSpan) {
         yearSpan.innerHTML = new Date().getFullYear();
     }
     
-    // Load layout preference from localStorage
     const savedLayout = localStorage.getItem('filemanager-layout');
     if (savedLayout) {
         setTimeout(() => setLayout(savedLayout, false), 100);
@@ -756,7 +847,6 @@ function setLayout(layout, save = true) {
     const listing = document.querySelector('.listing');
     if (!listing) return;
     
-    // Remove existing grid container if any
     const existingGrid = listing.querySelector('.grid-container');
     if (existingGrid) existingGrid.remove();
     
@@ -764,7 +854,6 @@ function setLayout(layout, save = true) {
         listing.classList.add('grid-view');
         listing.classList.remove('list-view');
         
-        // Convert table to grid
         const table = listing.querySelector('table');
         const tbody = table.querySelector('tbody');
         const rows = tbody.querySelectorAll('tr:not(.parent-dir)');
@@ -780,28 +869,40 @@ function setLayout(layout, save = true) {
             const checksumCell = row.querySelector('.checksum-cell .sha256-hash');
             const timeEl = row.querySelector('time');
             const isDir = row.classList.contains('dir');
+            const isMissing = row.classList.contains('missing');
             
-            if (nameLink && nameSpan) {
+            if (nameSpan) {
                 const gridItem = document.createElement('div');
                 gridItem.className = 'grid-item';
                 
-                let checksumHtml = '';
-                if (checksumCell && !isDir) {
-                    const sha256 = checksumCell.textContent.replace('✓ Copied!', '').trim();
-                    if (sha256 && sha256 !== '—') {
-                        checksumHtml = `<div class="grid-item-checksum" onclick="copyToClipboard('${sha256.replace('...', '')}', this)">${sha256}</div>`;
+                if (isMissing) {
+                    gridItem.classList.add('missing');
+                    gridItem.innerHTML = `
+                        <div class="grid-item-content missing">
+                            ${iconCell ? iconCell.innerHTML : ''}
+                            <div class="name">${nameSpan.textContent}</div>
+                            <div class="missing-badge">404 - Not Found</div>
+                        </div>
+                    `;
+                } else if (nameLink) {
+                    let checksumHtml = '';
+                    if (checksumCell && !isDir) {
+                        const sha256 = checksumCell.textContent.replace('✓ Copied!', '').trim();
+                        if (sha256 && sha256 !== '—') {
+                            checksumHtml = `<div class="grid-item-checksum" onclick="copyToClipboard('${sha256.replace('...', '')}', this)">${sha256}</div>`;
+                        }
                     }
+                    
+                    gridItem.innerHTML = `
+                        <a href="${nameLink.getAttribute('href')}">
+                            ${iconCell ? iconCell.innerHTML : ''}
+                            <div class="name">${nameSpan.textContent}</div>
+                            <div class="grid-item-size">${sizeCell ? sizeCell.textContent : '—'}</div>
+                            ${checksumHtml}
+                            <div class="grid-item-date">${timeEl ? formatDate(parseInt(new Date(timeEl.getAttribute('datetime')).getTime() / 1000)) : '—'}</div>
+                        </a>
+                    `;
                 }
-                
-                gridItem.innerHTML = `
-                    <a href="${nameLink.getAttribute('href')}">
-                        ${iconCell ? iconCell.innerHTML : ''}
-                        <div class="name">${nameSpan.textContent}</div>
-                        <div class="grid-item-size">${sizeCell ? sizeCell.textContent : '—'}</div>
-                        ${checksumHtml}
-                        <div class="grid-item-date">${timeEl ? formatDate(parseInt(new Date(timeEl.getAttribute('datetime')).getTime() / 1000)) : '—'}</div>
-                    </a>
-                `;
                 gridContainer.appendChild(gridItem);
             }
         });
@@ -819,7 +920,6 @@ function setLayout(layout, save = true) {
         }
     }
     
-    // Update button states
     const listBtn = document.getElementById('layout-list');
     const gridBtn = document.getElementById('layout-grid');
     
@@ -841,5 +941,6 @@ function setLayout(layout, save = true) {
 // Make functions global
 window.filterFiles = filterFiles;
 window.setLayout = setLayout;
-window.initPage = initPage;
+window.changeSort = changeSort;
 window.copyToClipboard = copyToClipboard;
+window.initPage = initPage;

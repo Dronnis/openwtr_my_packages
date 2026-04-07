@@ -1207,3 +1207,94 @@ td a:visited:hover {
         color: #66b0ff;
     }
 }
+
+
+/* Missing file styles */
+.file.missing {
+    opacity: 0.7;
+    background: #fff3cd;
+}
+
+.file.missing:hover {
+    background: #ffeaa7;
+}
+
+.missing-file {
+    color: #856404;
+    text-decoration: line-through;
+}
+
+.missing-badge {
+    display: inline-block;
+    margin-left: 10px;
+    padding: 2px 8px;
+    background: #ffc107;
+    color: #856404;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: normal;
+}
+
+.grid-item.missing {
+    opacity: 0.7;
+    background: #fff3cd;
+    border-color: #ffc107;
+}
+
+.grid-item.missing .name {
+    color: #856404;
+    text-decoration: line-through;
+}
+
+@media (prefers-color-scheme: dark) {
+    .file.missing {
+        background: #2c2416;
+    }
+    
+    .file.missing:hover {
+        background: #3d331f;
+    }
+    
+    .missing-file {
+        color: #ffd970;
+    }
+    
+    .missing-badge {
+        background: #ff9800;
+        color: #2c2416;
+    }
+    
+    .grid-item.missing {
+        background: #2c2416;
+        border-color: #ff9800;
+    }
+    
+    .grid-item.missing .name {
+        color: #ffd970;
+    }
+}
+
+/* Sort indicators */
+.sort-name, .sort-size, .sort-date {
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.sort-name:hover, .sort-size:hover, .sort-date:hover {
+    color: #006ed3;
+}
+
+.sort-indicator {
+    display: inline-block;
+    font-size: 12px;
+}
+
+@media (prefers-color-scheme: dark) {
+    .sort-name:hover, .sort-size:hover, .sort-date:hover {
+        color: #66b0ff;
+    }
+}
