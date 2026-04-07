@@ -11,7 +11,7 @@
 <body>
     <header>
         <div class="wrapper">
-            <div class="breadcrumbs">Folder Path</div>
+            <div class="breadcrumbs">Navigation</div>
             <h1>
                 <a href="/">/</a>
             </h1>
@@ -29,13 +29,7 @@
     </footer>
     <script src="/assets/script.js"></script>
     <script>
-        // Extract path from current URL
-        const path = window.location.pathname;
-        // Redirect to main handler with path parameter
-        if (path !== '/' && path !== '/index.html' && !path.includes('/assets/')) {
-            // For GitHub Pages 404 handling, we need to use the path as is
-            window.appCurrentPath = path.substring(1); // Remove leading slash
-        }
+        // Initialize the page - path is taken from window.location.pathname
         initPage();
     </script>
 </body>

@@ -505,31 +505,28 @@ td a:visited:hover {
 
 
 
-
-
-
-/* Progress Bar Styles */
+        /* Progress Bar Styles */
 .progress-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.8);
     z-index: 9999;
     display: flex;
     justify-content: center;
     align-items: center;
-    backdrop-filter: blur(3px);
+    backdrop-filter: blur(5px);
 }
 
 .progress-container {
     background: white;
     padding: 30px;
     border-radius: 12px;
-    min-width: 300px;
+    min-width: 350px;
     text-align: center;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -544,7 +541,7 @@ td a:visited:hover {
     border-radius: 10px;
     overflow: hidden;
     margin: 20px 0;
-    height: 30px;
+    height: 35px;
 }
 
 .progress-bar {
@@ -556,7 +553,7 @@ td a:visited:hover {
     align-items: center;
     justify-content: center;
     color: white;
-    font-size: 12px;
+    font-size: 14px;
     font-weight: bold;
 }
 
@@ -576,9 +573,9 @@ td a:visited:hover {
 .notice {
     background: #fff3cd;
     border-left: 4px solid #ffc107;
-    padding: 12px 20px;
-    margin: 20px 0;
-    border-radius: 4px;
+    padding: 15px 20px;
+    margin: 20px;
+    border-radius: 8px;
     color: #856404;
 }
 
@@ -590,68 +587,10 @@ td a:visited:hover {
     }
 }
 
-/* Changelog Preview */
-.changelog-preview {
-    background: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    padding: 20px;
-    margin: 20px 0;
-    max-height: 400px;
-    overflow-y: auto;
-}
-
-@media (prefers-color-scheme: dark) {
-    .changelog-preview {
-        background: #0f151c;
-        border-color: #2c3e4e;
-    }
-}
-
-.changelog-preview h2 {
-    margin-top: 0;
-    color: #006ed3;
-}
-
-.changelog-preview hr {
-    margin: 15px 0;
-    border: none;
-    border-top: 1px solid #dee2e6;
-}
-
-/* Latest Release Banner */
-.latest-release-banner {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 20px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    text-align: center;
-}
-
-.latest-release-banner h3 {
-    margin: 0 0 10px 0;
-}
-
-.latest-release-banner .download-btn {
-    display: inline-block;
-    background: white;
-    color: #667eea;
-    padding: 10px 20px;
-    border-radius: 5px;
-    text-decoration: none;
-    margin-top: 10px;
-    font-weight: bold;
-    transition: transform 0.2s;
-}
-
-.latest-release-banner .download-btn:hover {
-    transform: scale(1.05);
-}
-
 /* Markdown Content */
 .markdown-content {
     line-height: 1.6;
+    padding: 20px;
 }
 
 .markdown-content h1, 
@@ -663,9 +602,10 @@ td a:visited:hover {
 
 .markdown-content code {
     background: #f4f4f4;
-    padding: 2px 5px;
-    border-radius: 3px;
+    padding: 2px 6px;
+    border-radius: 4px;
     font-family: monospace;
+    font-size: 0.9em;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -678,8 +618,9 @@ td a:visited:hover {
 .markdown-content pre {
     background: #f4f4f4;
     padding: 15px;
-    border-radius: 5px;
+    border-radius: 8px;
     overflow-x: auto;
+    margin: 15px 0;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -688,25 +629,132 @@ td a:visited:hover {
     }
 }
 
+.markdown-content blockquote {
+    border-left: 4px solid #006ed3;
+    margin: 15px 0;
+    padding-left: 20px;
+    color: #666;
+}
+
+.markdown-content table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 15px 0;
+}
+
+.markdown-content th,
+.markdown-content td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
 /* Empty State */
 .empty-state {
     text-align: center;
-    padding: 60px 20px;
+    padding: 80px 20px;
     color: #999;
 }
 
-/* Loading Spinner for inline content */
-.loading-spinner {
-    display: inline-block;
-    width: 20px;
-    height: 20px;
-    border: 2px solid #f3f3f3;
-    border-top: 2px solid #006ed3;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
+.empty-state h2 {
+    margin-bottom: 20px;
 }
 
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+.empty-state a {
+    color: #006ed3;
+    text-decoration: none;
+}
+
+/* Listing Styles */
+.listing {
+    overflow-x: auto;
+}
+
+.listing table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.listing th {
+    text-align: left;
+    padding: 15px 10px;
+    background: #f8f9fa;
+    font-weight: 600;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.listing td {
+    padding: 12px 10px;
+    border-bottom: 1px solid #e5e9ea;
+}
+
+.listing tr:hover {
+    background: #f4f9fd;
+}
+
+@media (prefers-color-scheme: dark) {
+    .listing th {
+        background: #0f151c;
+        border-bottom-color: #2c3e4e;
+    }
+    
+    .listing td {
+        border-bottom-color: #1a2530;
+    }
+    
+    .listing tr:hover {
+        background: #162030;
+    }
+}
+
+.sizebar {
+    position: relative;
+    padding: 4px 8px;
+    display: inline-block;
+    min-width: 80px;
+}
+
+.sizebar-bar {
+    background-color: #dbeeff;
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 0;
+    height: 100%;
+    border-radius: 4px;
+}
+
+.sizebar-text {
+    position: relative;
+    z-index: 1;
+    font-size: 13px;
+}
+
+/* Readme section */
+.readme {
+    padding: 20px;
+    border-top: 1px solid #e5e9ea;
+    margin-top: 20px;
+}
+
+@media (prefers-color-scheme: dark) {
+    .readme {
+        border-top-color: #2c3e4e;
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .hideable {
+        display: none;
+    }
+    
+    .latest-release-banner {
+        padding: 20px;
+    }
+    
+    .latest-release-banner h2 {
+        font-size: 20px;
+    }
 }
