@@ -11,33 +11,6 @@
         { "label": "🔑 Ключ репозитория", "path": "key-build.pub", "download": true },
         { "label": "📖 Документация", "path": "https://github.com/username/repo/wiki" }
       ]
-    },
-    "folders": {
-      "releases": {
-        "header": "releases/header.md",
-        "footer": "releases/footer.md",
-        "info": "ℹ️ Все доступные релизы собраны для архитектур x86_64 и aarch64",
-        "warning": "⚠️ Релизы старше 6 месяцев считаются устаревшими"
-      },
-      "releases/25.12.2": {
-        "header": "releases/25.12.2/header.md",
-        "footer": "releases/25.12.2/footer.md",
-        "changelog": "releases/25.12.2/changelog.md",
-        "success": "✅ Этот релиз протестирован и стабилен для production использования",
-        "notice": "📌 Рекомендуется обновиться с предыдущих версий"
-      },
-      "releases/25.12.2/targets/x86/64": {
-        "header": "releases/25.12.2/targets/x86/64/header.md",
-        "notice": "⚠️ Эти сборки только для x86_64!",
-        "readme": "releases/25.12.2/targets/x86/64/readme.md",
-        "warning": "⚠️ Убедитесь, что ваш процессор поддерживает SSE4.2 инструкции",
-        "info": "ℹ️ В этой сборке включена поддержка VirtIO драйверов"
-      },
-      "releases/25.12.2/targets/x86/64/packages": {
-        "error": "❌ Некоторые пакеты могут отсутствовать из-за проблем со сборкой",
-        "notice": "📌 Все пакеты подписаны ключом репозитория",
-        "info": "ℹ️ Доступно более 500 дополнительных пакетов"
-      }
     }
   },
   "files": {
@@ -55,8 +28,7 @@
           "size": 0,
           "date": 1735689600,
           "isLatest": true,
-          "downloadFile": "openwrt-25.12.2-x86-64-generic-ext4-rootfs.img.gz",
-          "changelogPreview": "## Что нового в 25.12.2\n\n- Обновлён kernel до 6.6.15..."
+          "downloadFile": "openwrt-25.12.2-x86-64-generic-ext4-rootfs.img.gz"
         },
         "targets": {
           "__INFO__": { "icon": "folder", "type": "dir", "size": 0, "date": 1735689600 },

@@ -100,48 +100,6 @@ function getNodeInfo(path) {
     return current.__INFO__ || (current.type ? current : null);
 }
 
-// Get folder configuration
-function getFolderConfig(path) {
-    if (!window.app.config || !window.app.config.folders) return null;
-    
-    const cleanPath = path.replace(/^\/+|\/+$/g, '');
-    
-    if (window.app.config.folders[cleanPath]) {
-        return window.app.config.folders[cleanPath];
-    }
-    
-    const parts = cleanPath.split('/');
-    for (let i = parts.length; i > 0; i--) {
-        const parentPath = parts.slice(0, i).join('/');
-        if (window.app.config.folders[parentPath]) {
-            return window.app.config.folders[parentPath];
-        }
-    }
-    
-    return null;
-}
-
-function renderMessage(message, type = 'notice') {
-    if (!message) return '';
-    
-    const icons = {
-        info: 'ℹ️',
-        success: '✅',
-        warning: '⚠️',
-        error: '❌',
-        notice: '📌'
-    };
-    
-    const icon = icons[type] || icons.notice;
-    
-    return `
-        <div class="message message-${type}">
-            <div class="message-icon">${icon}</div>
-            <div class="message-content">${message}</div>
-        </div>
-    `;
-}
-
 // Get children of a path (files and folders)
 function getChildren(path) {
     if (!window.app.indexData) return null;
@@ -170,6 +128,71 @@ function getChildren(path) {
     }
     
     return children;
+}
+
+// Load folder-specific MD files
+async function loadFolderContent(folderPath) {
+    const content = {
+        header: null,
+        footer: null,
+        changelog: null,
+        readme: null,
+        messages: []
+    };
+    
+    // Base path without trailing slash
+    const basePath = folderPath === '/' ? '' : folderPath;
+    
+    // Define possible message files and their types
+    const messageFiles = [
+        { file: '.notice.md', type: 'notice' },
+        { file: '.info.md', type: 'info' },
+        { file: '.success.md', type: 'success' },
+        { file: '.warning.md', type: 'warning' },
+        { file: '.error.md', type: 'error' }
+    ];
+    
+    // Load message files
+    for (const msg of messageFiles) {
+        const msgPath = `${basePath}${msg.file}`;
+        const exists = await fileExists(msgPath);
+        if (exists) {
+            const response = await fetch(msgPath);
+            const text = await response.text();
+            if (text.trim()) {
+                content.messages.push({
+                    type: msg.type,
+                    content: await renderMarkdownFromText(text)
+                });
+            }
+        }
+    }
+    
+    // Load header
+    const headerPath = `${basePath}/header.md`;
+    if (await fileExists(headerPath)) {
+        content.header = await renderMarkdown(headerPath);
+    }
+    
+    // Load footer
+    const footerPath = `${basePath}/footer.md`;
+    if (await fileExists(footerPath)) {
+        content.footer = await renderMarkdown(footerPath);
+    }
+    
+    // Load changelog
+    const changelogPath = `${basePath}/changelog.md`;
+    if (await fileExists(changelogPath)) {
+        content.changelog = await renderMarkdown(changelogPath);
+    }
+    
+    // Load readme
+    const readmePath = `${basePath}/readme.md`;
+    if (await fileExists(readmePath)) {
+        content.readme = await renderMarkdown(readmePath);
+    }
+    
+    return content;
 }
 
 // Sort items
@@ -224,7 +247,7 @@ function sortItems(items, sortBy, order) {
     return sorted;
 }
 
-// Render markdown with existence check
+// Render markdown from URL
 async function renderMarkdown(url, silent = true) {
     if (!url) return null;
     
@@ -234,29 +257,47 @@ async function renderMarkdown(url, silent = true) {
         
         const response = await fetch(url);
         const text = await response.text();
-        
-        let html = text
-            .replace(/^# (.*$)/gm, '<h1>$1</h1>')
-            .replace(/^## (.*$)/gm, '<h2>$1</h2>')
-            .replace(/^### (.*$)/gm, '<h3>$1</h3>')
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.*?)\*/g, '<em>$1</em>')
-            .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2">$1</a>')
-            .replace(/`(.*?)`/g, '<code>$1</code>')
-            .replace(/^- (.*$)/gm, '<li>$1</li>')
-            .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
-            .replace(/\n\n/g, '</p><p>')
-            .replace(/\n/g, '<br>');
-        
-        if (!html.startsWith('<')) {
-            html = `<p>${html}</p>`;
-        }
-        
-        return `<div class="markdown-content">${html}</div>`;
+        return await renderMarkdownFromText(text);
     } catch (error) {
         if (!silent) console.error('Failed to load markdown:', url, error);
         return null;
     }
+}
+
+// Render markdown from text
+async function renderMarkdownFromText(text) {
+    // Convert markdown to HTML
+    let html = text
+        .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+        .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+        .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+        .replace(/^#### (.*$)/gm, '<h4>$1</h4>')
+        .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/~~(.*?)~~/g, '<del>$1</del>')
+        .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank">$1</a>')
+        .replace(/`(.*?)`/g, '<code>$1</code>')
+        .replace(/^\- (.*$)/gm, '<li>$1</li>')
+        .replace(/^\* (.*$)/gm, '<li>$1</li>')
+        .replace(/^\d+\. (.*$)/gm, '<li>$1</li>')
+        .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code class="language-$1">$2</code></pre>')
+        .replace(/`{3}.*?\n([\s\S]*?)`{3}/g, '<pre><code>$1</code></pre>')
+        .replace(/\n\n/g, '</p><p>')
+        .replace(/\n/g, '<br>');
+    
+    // Wrap in paragraphs if not already wrapped
+    if (!html.startsWith('<')) {
+        html = `<p>${html}</p>`;
+    }
+    
+    // Fix lists
+    html = html.replace(/<li>.*?<\/li>/gs, (match) => {
+        if (match.includes('<ul>') || match.includes('<ol>')) return match;
+        return `<ul>${match}</ul>`;
+    });
+    
+    return `<div class="markdown-content">${html}</div>`;
 }
 
 // Format file size
@@ -338,6 +379,28 @@ function buildBreadcrumbs(path) {
     }
     
     return breadcrumbs;
+}
+
+// Render message with appropriate style
+function renderMessage(message, type) {
+    if (!message) return '';
+    
+    const icons = {
+        notice: '📌',
+        info: 'ℹ️',
+        success: '✅',
+        warning: '⚠️',
+        error: '❌'
+    };
+    
+    const icon = icons[type] || '📌';
+    
+    return `
+        <div class="message message-${type}">
+            <div class="message-icon">${icon}</div>
+            <div class="message-content">${message}</div>
+        </div>
+    `;
 }
 
 // Render file listing with sorting
@@ -535,7 +598,6 @@ function changeSort(sortBy) {
     // Re-render current view
     const currentPath = window.location.pathname;
     if (currentPath === '/' || currentPath === '/index.html') {
-        // Main page doesn't have listing
         return;
     }
     
@@ -556,6 +618,14 @@ async function renderMainPage() {
         <div class="main-content">
     `;
     
+    // Load main page content from root MD files
+    const rootContent = await loadFolderContent('');
+    
+    // Display messages from root
+    for (const msg of rootContent.messages) {
+        html += renderMessage(msg.content, msg.type);
+    }
+    
     if (config?.mainPage?.latestRelease) {
         const latestPath = config.mainPage.latestRelease;
         const latestNode = getNodeInfo(latestPath);
@@ -565,7 +635,6 @@ async function renderMainPage() {
             const downloadUrl = `${latestPath}/${latestInfo.downloadFile}`;
             const versionName = latestPath.split('/').pop();
             
-            // Check if download file exists
             const exists = await fileExists(downloadUrl);
             
             if (exists) {
@@ -580,6 +649,11 @@ async function renderMainPage() {
                 `;
             }
         }
+    }
+    
+    // Add root header
+    if (rootContent.header) {
+        html += rootContent.header;
     }
     
     if (config?.mainPage?.showChangelog && config?.mainPage?.changelogFile) {
@@ -603,6 +677,11 @@ async function renderMainPage() {
             html += `<a href="${link.path}" ${target} class="quick-link">${link.label}</a>`;
         }
         html += `</div></div>`;
+    }
+    
+    // Add root footer
+    if (rootContent.footer) {
+        html += rootContent.footer;
     }
     
     html += `</div>`;
@@ -654,7 +733,8 @@ async function renderFolderPage(path) {
         return;
     }
     
-    const folderConfig = getFolderConfig(path);
+    // Load folder-specific content from MD files
+    const folderContent = await loadFolderContent(path);
     
     let html = `
         <div class="meta">
@@ -685,35 +765,19 @@ async function renderFolderPage(path) {
         </div>
     `;
     
-    // Handle different message types
-    if (folderConfig?.notice) {
-        html += renderMessage(folderConfig.notice, 'notice');
+    // Display all messages from MD files
+    for (const msg of folderContent.messages) {
+        html += renderMessage(msg.content, msg.type);
     }
     
-    if (folderConfig?.info) {
-        html += renderMessage(folderConfig.info, 'info');
+    // Add header
+    if (folderContent.header) {
+        html += folderContent.header;
     }
     
-    if (folderConfig?.warning) {
-        html += renderMessage(folderConfig.warning, 'warning');
-    }
-    
-    if (folderConfig?.error) {
-        html += renderMessage(folderConfig.error, 'error');
-    }
-    
-    if (folderConfig?.success) {
-        html += renderMessage(folderConfig.success, 'success');
-    }
-    
-    if (folderConfig?.header) {
-        const headerHtml = await renderMarkdown(folderConfig.header);
-        if (headerHtml) html += headerHtml;
-    }
-    
-    if (folderConfig?.changelog) {
-        const changelogHtml = await renderMarkdown(folderConfig.changelog);
-        if (changelogHtml) html += `<div class="changelog-preview">${changelogHtml}</div>`;
+    // Add changelog
+    if (folderContent.changelog) {
+        html += `<div class="changelog-preview">${folderContent.changelog}</div>`;
     }
     
     html += `
@@ -749,14 +813,14 @@ async function renderFolderPage(path) {
         </div>
     `;
     
-    if (folderConfig?.readme) {
-        const readmeHtml = await renderMarkdown(folderConfig.readme);
-        if (readmeHtml) html += `<div class="readme">${readmeHtml}</div>`;
+    // Add readme
+    if (folderContent.readme) {
+        html += `<div class="readme">${folderContent.readme}</div>`;
     }
     
-    if (folderConfig?.footer) {
-        const footerHtml = await renderMarkdown(folderConfig.footer);
-        if (footerHtml) html += footerHtml;
+    // Add footer
+    if (folderContent.footer) {
+        html += folderContent.footer;
     }
     
     main.innerHTML = html;
