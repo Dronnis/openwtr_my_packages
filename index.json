@@ -9,7 +9,7 @@
       "quickLinks": [
         {
           "label": "📦 Все релизы",
-          "path": "releases/"
+          "path": "/releases/"
         },
         {
           "label": "🔑 Ключ репозитория",
