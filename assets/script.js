@@ -121,6 +121,27 @@ function getFolderConfig(path) {
     return null;
 }
 
+function renderMessage(message, type = 'notice') {
+    if (!message) return '';
+    
+    const icons = {
+        info: 'ℹ️',
+        success: '✅',
+        warning: '⚠️',
+        error: '❌',
+        notice: '📌'
+    };
+    
+    const icon = icons[type] || icons.notice;
+    
+    return `
+        <div class="message message-${type}">
+            <div class="message-icon">${icon}</div>
+            <div class="message-content">${message}</div>
+        </div>
+    `;
+}
+
 // Get children of a path (files and folders)
 function getChildren(path) {
     if (!window.app.indexData) return null;
@@ -606,7 +627,6 @@ async function renderFolderPage(path) {
     }
     
     if (nodeInfo.type === 'file' || (nodeInfo.type !== 'dir' && !nodeInfo.__INFO__)) {
-        // Check if file actually exists
         const exists = await fileExists(path);
         if (exists) {
             window.location.href = path;
@@ -665,8 +685,25 @@ async function renderFolderPage(path) {
         </div>
     `;
     
+    // Handle different message types
     if (folderConfig?.notice) {
-        html += `<div class="notice">${folderConfig.notice}</div>`;
+        html += renderMessage(folderConfig.notice, 'notice');
+    }
+    
+    if (folderConfig?.info) {
+        html += renderMessage(folderConfig.info, 'info');
+    }
+    
+    if (folderConfig?.warning) {
+        html += renderMessage(folderConfig.warning, 'warning');
+    }
+    
+    if (folderConfig?.error) {
+        html += renderMessage(folderConfig.error, 'error');
+    }
+    
+    if (folderConfig?.success) {
+        html += renderMessage(folderConfig.success, 'success');
     }
     
     if (folderConfig?.header) {
