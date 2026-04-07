@@ -194,11 +194,41 @@ async function renderMarkdown(url, silent = true) {
 // Format file size
 function formatSize(bytes) {
     if (bytes === 0) return '0 B';
-    if (!bytes) return '—';
+    if (!bytes || bytes === null) return '—';
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// Copy to clipboard
+async function copyToClipboard(text, element) {
+    try {
+        await navigator.clipboard.writeText(text);
+        // Show temporary tooltip
+        const originalText = element.textContent;
+        element.textContent = '✓ Copied!';
+        element.style.color = '#4caf50';
+        setTimeout(() => {
+            element.textContent = originalText;
+            element.style.color = '';
+        }, 1500);
+    } catch (err) {
+        console.error('Failed to copy:', err);
+        // Fallback
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        
+        const originalText = element.textContent;
+        element.textContent = '✓ Copied!';
+        setTimeout(() => {
+            element.textContent = originalText;
+        }, 1500);
+    }
 }
 
 // Format date
@@ -208,25 +238,26 @@ function formatDate(timestamp) {
     return date.toLocaleString();
 }
 
-// Get icon based on file type
+// Get icon based on file type (simplified SVG)
 function getIcon(type, iconName) {
     if (type === 'dir') {
-        return `<svg class="icon icon-tabler icon-tabler-folder-filled" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="currentColor"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 3a1 1 0 0 1 .608 .206l.1 .087l2.706 2.707h6.586a3 3 0 0 1 2.995 2.824l.005 .176v8a3 3 0 0 1 -2.824 2.995l-.176 .005h-14a3 3 0 0 1 -2.995 -2.824l-.005 -.176v-11a3 3 0 0 1 2.824 -2.995l.176 -.005h4z"/></svg>`;
+        return `<svg class="icon icon-tabler icon-tabler-folder-filled" width="20" height="20" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="currentColor"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 3a1 1 0 0 1 .608 .206l.1 .087l2.706 2.707h6.586a3 3 0 0 1 2.995 2.824l.005 .176v8a3 3 0 0 1 -2.824 2.995l-.176 .005h-14a3 3 0 0 1 -2.995 -2.824l-.005 -.176v-11a3 3 0 0 1 2.824 -2.995l.176 -.005h4z"/></svg>`;
     }
     
     if (iconName === 'package') {
-        return `<svg class="icon icon-tabler" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3zM12 12l8-4.5M12 12v9M12 12L4 7.5"/></svg>`;
+        return `<svg class="icon icon-tabler" width="20" height="20" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3zM12 12l8-4.5M12 12v9M12 12L4 7.5"/><path d="M16.5 9.5l-4.5-2.5M10 15.5l-2-1.5"/></svg>`;
     }
     
     if (iconName === 'image') {
-        return `<svg class="icon icon-tabler" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M15 8h.01M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="M4 16l5-5c.928-.893 2.072-.893 3 0l5 5"/><path d="M14 14l1-1c.928-.893 2.072-.893 3 0l3 3"/></svg>`;
+        return `<svg class="icon icon-tabler" width="20" height="20" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M15 8h.01M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="M4 16l5-5c.928-.893 2.072-.893 3 0l5 5"/><path d="M14 14l1-1c.928-.893 2.072-.893 3 0l3 3"/></svg>`;
     }
     
     if (iconName === 'key') {
-        return `<svg class="icon icon-tabler" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M16.555 3.843l3.602 3.602a2.877 2.877 0 0 1 0 4.069l-2.643 2.643a2.877 2.877 0 0 1 -4.069 0l-.301 -.301l-6.558 6.558a2 2 0 0 1 -1.239 .578l-.175 .008h-1.172a1 1 0 0 1 -.993 -.883l-.007 -.117v-1.172a2 2 0 0 1 .467 -1.284l.119 -.13l.414 -.414h2v-2h2v-2l2.144 -2.144l-.301 -.301a2.877 2.877 0 0 1 0 -4.069l2.643 -2.643a2.877 2.877 0 0 1 4.069 0zM15 9h.01"/></svg>`;
+        return `<svg class="icon icon-tabler" width="20" height="20" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M16.555 3.843l3.602 3.602a2.877 2.877 0 0 1 0 4.069l-2.643 2.643a2.877 2.877 0 0 1 -4.069 0l-.301 -.301l-6.558 6.558a2 2 0 0 1 -1.239 .578l-.175 .008h-1.172a1 1 0 0 1 -.993 -.883l-.007 -.117v-1.172a2 2 0 0 1 .467 -1.284l.119 -.13l.414 -.414h2v-2h2v-2l2.144 -2.144l-.301 -.301a2.877 2.877 0 0 1 0 -4.069l2.643 -2.643a2.877 2.877 0 0 1 4.069 0zM15 9h.01"/></svg>`;
     }
     
-    return `<svg class="icon icon-tabler" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 4h4l3 3h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/></svg>`;
+    // Default file icon
+    return `<svg class="icon icon-tabler" width="20" height="20" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 4h4l3 3h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="M9 12h6"/><path d="M12 9v6"/></svg>`;
 }
 
 // Build breadcrumbs from path
@@ -245,6 +276,7 @@ function buildBreadcrumbs(path) {
 }
 
 // Render file listing for directory views
+// Render file listing for directory views (fixed alignment)
 function renderListing(items, currentPath) {
     const tbody = document.querySelector('#file-listing tbody');
     if (!tbody) return;
@@ -269,22 +301,22 @@ function renderListing(items, currentPath) {
     if (currentPath && currentPath !== '/') {
         const parentPath = currentPath.split('/').slice(0, -1).join('/') || '/';
         const row = document.createElement('tr');
-        row.className = 'file';
+        row.className = 'file parent-dir';
         row.innerHTML = `
-            <td><td style="padding-left: 10px;"></td>
-            <td>
-                <a href="${parentPath}">
-                    <svg class="icon icon-tabler" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none">
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                        <path d="M5 12h14M12 5l7 7-7 7"/>
-                    </svg>
-                    <span class="name">../</span>
-                </a>
-            </a>
+            <td class="icon-cell">
+                <svg class="icon icon-tabler" width="20" height="20" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
             </td>
-            <td class="size">—</td>
-            <td class="timestamp hideable">—</td>
-            <td class="hideable"></td>
+            <td class="name-cell">
+                <a href="${parentPath}">
+                    <span class="name">..</span>
+                </a>
+            </td>
+            <td class="size-cell">—</td>
+            <td class="checksum-cell">—</td>
+            <td class="timestamp-cell hideable">—</td>
         `;
         tbody.appendChild(row);
     }
@@ -293,23 +325,29 @@ function renderListing(items, currentPath) {
     for (const [name, data] of Object.entries(dirs)) {
         const info = data.__INFO__ || data;
         const newPath = currentPath === '/' ? `/${name}` : `${currentPath}/${name}`;
+        const size = info.size || 0;
         
         const row = document.createElement('tr');
-        row.className = 'file';
+        row.className = 'file dir';
         row.innerHTML = `
-            <td><td style="padding-left: 10px;"></td>
-            <td>
+            <td class="icon-cell">
+                ${getIcon('dir', info.icon)}
+            </td>
+            <td class="name-cell">
                 <a href="${newPath}">
-                    ${getIcon('dir', info.icon)}
                     <span class="name">${name}/</span>
                 </a>
-            </a>
             </td>
-            <td class="size">—</td>
-            <td class="timestamp hideable">
+            <td class="size-cell" data-size="${size}">
+                <div class="sizebar">
+                    <div class="sizebar-bar"></div>
+                    <div class="sizebar-text">${formatSize(size)}</div>
+                </div>
+            </td>
+            <td class="checksum-cell">—</td>
+            <td class="timestamp-cell hideable">
                 <time datetime="${new Date((info.date || 0) * 1000).toISOString()}">${formatDate(info.date)}</time>
             </td>
-            <td class="hideable"></td>
         `;
         tbody.appendChild(row);
     }
@@ -318,34 +356,58 @@ function renderListing(items, currentPath) {
     for (const [name, data] of Object.entries(files)) {
         const info = data.__INFO__ || data;
         const filePath = currentPath === '/' ? `/${name}` : `${currentPath}/${name}`;
+        const size = info.size || 0;
+        const sha256 = info.sha256sum || '';
         
         const row = document.createElement('tr');
         row.className = 'file';
         row.innerHTML = `
-            <td><td style="padding-left: 10px;"></td>
-            <td>
-                <a href="${filePath}" ${info.sha256sum ? `download="${name}"` : ''}>
-                    ${getIcon('file', info.icon)}
+            <td class="icon-cell">
+                ${getIcon('file', info.icon)}
+            </td>
+            <td class="name-cell">
+                <a href="${filePath}" ${sha256 ? `download="${name}"` : ''}>
                     <span class="name">${name}</span>
                 </a>
-            </a>
             </td>
-            <td class="size" data-size="${info.size || 0}">
+            <td class="size-cell" data-size="${size}">
                 <div class="sizebar">
                     <div class="sizebar-bar"></div>
-                    <div class="sizebar-text">${formatSize(info.size)}</div>
+                    <div class="sizebar-text">${formatSize(size)}</div>
                 </div>
             </td>
-            <td class="timestamp hideable">
+            <td class="checksum-cell">
+                ${sha256 ? `<span class="sha256-hash" onclick="copyToClipboard('${sha256}', this)" title="Click to copy SHA256">${sha256.substring(0, 16)}...</span>` : '—'}
+            </td>
+            <td class="timestamp-cell hideable">
                 <time datetime="${new Date((info.date || 0) * 1000).toISOString()}">${formatDate(info.date)}</time>
             </td>
-            <td class="hideable"></td>
         `;
         tbody.appendChild(row);
     }
     
     // Update size bars
     updateSizeBars();
+}
+
+function updateSizeBars() {
+    let largest = 0;
+    document.querySelectorAll('.size-cell').forEach(el => {
+        const size = parseInt(el.dataset.size);
+        if (size && size > largest) largest = size;
+    });
+    document.querySelectorAll('.size-cell').forEach(el => {
+        const size = parseInt(el.dataset.size);
+        const bar = el.querySelector('.sizebar-bar');
+        const text = el.querySelector('.sizebar-text');
+        if (bar && largest > 0 && size) {
+            const percent = (size / largest) * 100;
+            bar.style.width = `${percent}%`;
+            if (text && percent < 20) {
+                text.style.color = '#333';
+            }
+        }
+    });
 }
 
 function updateSizeBars() {
@@ -434,7 +496,6 @@ async function renderFolderPage(path) {
     // Check if path exists in index
     const nodeInfo = getNodeInfo(path);
     if (!nodeInfo) {
-        // Real 404 - path not found in index
         main.innerHTML = `
             <div class="empty-state">
                 <h2>404 - Path Not Found</h2>
@@ -447,7 +508,6 @@ async function renderFolderPage(path) {
     
     // Check if it's a file (not directory)
     if (nodeInfo.type === 'file' || (nodeInfo.type !== 'dir' && !nodeInfo.__INFO__)) {
-        // It's a file, redirect to actual file
         window.location.href = path;
         return;
     }
@@ -468,7 +528,7 @@ async function renderFolderPage(path) {
     // Get folder config
     const folderConfig = getFolderConfig(path);
     
-    // Build HTML
+    // Build HTML with fixed table structure
     let html = `
         <div class="meta">
             <div id="summary">
@@ -515,7 +575,7 @@ async function renderFolderPage(path) {
         if (changelogHtml) html += `<div class="changelog-preview">${changelogHtml}</div>`;
     }
     
-    // Add file listing
+    // Add file listing with fixed columns
     html += `
         <div class="listing">
             <div class="filter-bar">
@@ -528,14 +588,14 @@ async function renderFolderPage(path) {
                     <input type="text" placeholder="Filter files..." id="filter" onkeyup="filterFiles()">
                 </div>
             </div>
-            <table id="file-listing" aria-describedby="summary">
+            <table id="file-listing">
                 <thead>
                     <tr>
-                        <th style="width: 40px;"></th>
-                        <th>Name</th>
-                        <th style="width: 100px;">Size</th>
-                        <th class="hideable" style="width: 180px;">Modified</th>
-                        <th class="hideable" style="width: 40px;"></th>
+                        <th class="icon-column"></th>
+                        <th class="name-column">Name</th>
+                        <th class="size-column">Size</th>
+                        <th class="checksum-column">SHA256</th>
+                        <th class="timestamp-column hideable">Modified</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -707,25 +767,39 @@ function setLayout(layout, save = true) {
         // Convert table to grid
         const table = listing.querySelector('table');
         const tbody = table.querySelector('tbody');
-        const rows = tbody.querySelectorAll('tr');
+        const rows = tbody.querySelectorAll('tr:not(.parent-dir)');
         
         const gridContainer = document.createElement('div');
         gridContainer.className = 'grid-container';
         
         rows.forEach(row => {
-            const link = row.querySelector('td:nth-child(2) a');
+            const iconCell = row.querySelector('.icon-cell');
+            const nameLink = row.querySelector('.name-cell a');
             const nameSpan = row.querySelector('.name');
-            const sizeEl = row.querySelector('.size');
+            const sizeCell = row.querySelector('.size-cell .sizebar-text');
+            const checksumCell = row.querySelector('.checksum-cell .sha256-hash');
             const timeEl = row.querySelector('time');
+            const isDir = row.classList.contains('dir');
             
-            if (link && nameSpan) {
+            if (nameLink && nameSpan) {
                 const gridItem = document.createElement('div');
                 gridItem.className = 'grid-item';
+                
+                let checksumHtml = '';
+                if (checksumCell && !isDir) {
+                    const sha256 = checksumCell.textContent.replace('✓ Copied!', '').trim();
+                    if (sha256 && sha256 !== '—') {
+                        checksumHtml = `<div class="grid-item-checksum" onclick="copyToClipboard('${sha256.replace('...', '')}', this)">${sha256}</div>`;
+                    }
+                }
+                
                 gridItem.innerHTML = `
-                    <a href="${link.getAttribute('href')}">
-                        ${link.innerHTML}
-                        <div class="grid-item-size">${sizeEl ? sizeEl.querySelector('.sizebar-text')?.textContent || '—' : '—'}</div>
-                        <div class="grid-item-date">${timeEl ? timeEl.getAttribute('datetime') ? formatDate(parseInt(new Date(timeEl.getAttribute('datetime')).getTime() / 1000)) : '—' : '—'}</div>
+                    <a href="${nameLink.getAttribute('href')}">
+                        ${iconCell ? iconCell.innerHTML : ''}
+                        <div class="name">${nameSpan.textContent}</div>
+                        <div class="grid-item-size">${sizeCell ? sizeCell.textContent : '—'}</div>
+                        ${checksumHtml}
+                        <div class="grid-item-date">${timeEl ? formatDate(parseInt(new Date(timeEl.getAttribute('datetime')).getTime() / 1000)) : '—'}</div>
                     </a>
                 `;
                 gridContainer.appendChild(gridItem);
@@ -768,3 +842,4 @@ function setLayout(layout, save = true) {
 window.filterFiles = filterFiles;
 window.setLayout = setLayout;
 window.initPage = initPage;
+window.copyToClipboard = copyToClipboard;
