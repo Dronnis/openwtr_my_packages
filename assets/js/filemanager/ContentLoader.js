@@ -1,5 +1,8 @@
 import { loadingManager } from '../shared/LoadingManager.js';
 
+// Декларируем marked из глобальной переменной
+declare const marked: any;
+
 export class ContentLoader {
     constructor(localization) {
         this.localization = localization;
@@ -173,18 +176,35 @@ export class ContentLoader {
             
             const response = await fetch(url);
             const text = await response.text();
-            const html = this.renderMarkdownFromText(text);
+            
+            // Используем marked для парсинга Markdown
+            let html;
+            if (typeof marked !== 'undefined' && marked.parse) {
+                // Современная версия marked (асинхронная)
+                html = await marked.parse(text);
+            } else if (typeof marked !== 'undefined') {
+                // Старая версия marked (синхронная)
+                html = marked(text);
+            } else {
+                // Fallback на простой парсер
+                html = this.renderMarkdownSimple(text);
+            }
             
             loadingManager.completeTask(id, true);
-            return html;
+            return `<div class="markdown-content">${html}</div>`;
         } catch (error) {
+            console.error(`Error loading markdown ${url}:`, error);
             loadingManager.completeTask(id, false);
             return null;
         }
     }
 
-    renderMarkdownFromText(text) {
+    // Простой fallback парсер (если marked не загрузился)
+    renderMarkdownSimple(text) {
         let html = text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
             .replace(/^# (.*$)/gm, '<h1>$1</h1>')
             .replace(/^## (.*$)/gm, '<h2>$1</h2>')
             .replace(/^### (.*$)/gm, '<h3>$1</h3>')
@@ -212,7 +232,7 @@ export class ContentLoader {
             return `<ul>${match}</ul>`;
         });
         
-        return `<div class="markdown-content">${html}</div>`;
+        return html;
     }
 
     async loadFolderContent(folderPath) {
@@ -277,9 +297,17 @@ export class ContentLoader {
                                 const response = await fetch(msgPath);
                                 const text = await response.text();
                                 if (text && text.trim()) {
+                                    let html;
+                                    if (typeof marked !== 'undefined' && marked.parse) {
+                                        html = await marked.parse(text);
+                                    } else if (typeof marked !== 'undefined') {
+                                        html = marked(text);
+                                    } else {
+                                        html = this.renderMarkdownSimple(text);
+                                    }
                                     content.messages.push({
                                         type: msgType,
-                                        content: this.renderMarkdownFromText(text)
+                                        content: `<div class="markdown-content">${html}</div>`
                                     });
                                 }
                                 loadingManager.completeTask(taskId, true);
