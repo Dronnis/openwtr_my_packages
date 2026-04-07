@@ -153,20 +153,39 @@ export class FileManager {
         if (dirCountEl) dirCountEl.textContent = dirCount;
         if (fileCountEl) fileCountEl.textContent = fileCount;
         
-        const breadcrumbs = UIHelper.buildBreadcrumbs(path, (key) => this.localization.t(key));
-        const breadcrumbDiv = document.querySelector('.breadcrumbs');
-        if (breadcrumbDiv) {
-            breadcrumbDiv.innerHTML = `${this.localization.t('navigation')}: ${breadcrumbs.map((bc, i) => 
-                `<a href="${bc.path}">${bc.name}</a>${i < breadcrumbs.length - 1 ? ' / ' : ''}`
-            ).join('')}`;
-        }
+        this.updateBreadcrumbsWithAnimation(path);
         
         const h1 = document.querySelector('h1');
         if (h1) {
+            const breadcrumbs = UIHelper.buildBreadcrumbs(path, (key) => this.localization.t(key));
             h1.innerHTML = breadcrumbs.map((bc, i) => 
                 `<a href="${bc.path}">${bc.name}</a>${i < breadcrumbs.length - 1 ? ' / ' : ''}`
             ).join('');
         }
+    }
+    
+    updateBreadcrumbsWithAnimation(path) {
+        const breadcrumbDiv = document.querySelector('.breadcrumbs');
+        if (!breadcrumbDiv) return;
+        
+        const breadcrumbs = UIHelper.buildBreadcrumbs(path, (key) => this.localization.t(key));
+        const newHtml = `${this.localization.t('navigation')}: ${breadcrumbs.map((bc, i) => 
+            `<a href="${bc.path}">${bc.name}</a>${i < breadcrumbs.length - 1 ? ' / ' : ''}`
+        ).join('')}`;
+        
+        breadcrumbDiv.style.transition = 'opacity 0.15s ease';
+        breadcrumbDiv.style.opacity = '0';
+        
+        setTimeout(() => {
+            breadcrumbDiv.innerHTML = newHtml;
+            breadcrumbDiv.style.opacity = '1';
+            
+            setTimeout(() => {
+                if (breadcrumbDiv) {
+                    breadcrumbDiv.style.transition = '';
+                }
+            }, 150);
+        }, 100);
     }
 
     changeSort(sortBy) {
