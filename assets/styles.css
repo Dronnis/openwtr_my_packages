@@ -1836,3 +1836,224 @@ header .wrapper {
 header .wrapper {
     position: relative;
 }
+
+
+/* Progress Overlay - Clean Spinner Only */
+.progress-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(8px);
+}
+
+.progress-container {
+    background: white;
+    padding: 40px 50px;
+    border-radius: 20px;
+    min-width: 320px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Spinner Animation */
+.spinner {
+    width: 56px;
+    height: 56px;
+    border: 4px solid #e0e0e0;
+    border-top: 4px solid #006ed3;
+    border-right: 4px solid #4caf50;
+    border-bottom: 4px solid #ffc107;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 20px auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Progress Message */
+.progress-message {
+    font-size: 16px;
+    font-weight: 500;
+    color: #333;
+    margin: 15px 0 8px 0;
+    letter-spacing: -0.2px;
+}
+
+/* Progress Status (counter) */
+.progress-status {
+    font-size: 13px;
+    color: #888;
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+    letter-spacing: 0.5px;
+}
+
+/* Dark theme */
+@media (prefers-color-scheme: dark) {
+    .progress-container {
+        background: #1a2530;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+    
+    .progress-message {
+        color: #e0e0e0;
+    }
+    
+    .progress-status {
+        color: #888;
+    }
+    
+    .spinner {
+        border-color: #2c3e4e;
+        border-top-color: #4caf50;
+        border-right-color: #2196f3;
+        border-bottom-color: #ff9800;
+    }
+}
+
+/* Language Switcher */
+.language-switcher {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    display: flex;
+    gap: 8px;
+    z-index: 100;
+}
+
+.lang-option {
+    padding: 5px 12px;
+    border: 1px solid #dee2e6;
+    background: white;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.lang-option:hover {
+    background: #f0f0f0;
+}
+
+.lang-option.active {
+    background: #006ed3;
+    color: white;
+    border-color: #006ed3;
+}
+
+@media (prefers-color-scheme: dark) {
+    .lang-option {
+        background: #1a2530;
+        border-color: #2c3e4e;
+        color: #ccc;
+    }
+    
+    .lang-option:hover {
+        background: #253544;
+    }
+    
+    .lang-option.active {
+        background: #006ed3;
+        color: white;
+    }
+}
+
+/* Error State */
+.error-state {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.error-icon {
+    font-size: 64px;
+    margin-bottom: 20px;
+}
+
+.error-state h2 {
+    color: #dc3545;
+    margin-bottom: 20px;
+}
+
+.error-details {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px auto;
+    max-width: 600px;
+    text-align: left;
+}
+
+.error-details code {
+    background: #e9ecef;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+}
+
+.error-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 30px;
+}
+
+.error-btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background: #006ed3;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.error-btn:hover {
+    background: #0056b3;
+}
+
+@media (prefers-color-scheme: dark) {
+    .error-details {
+        background: #0f151c;
+        border-color: #2c3e4e;
+    }
+    
+    .error-details code {
+        background: #1a2530;
+        color: #e0e0e0;
+    }
+}
+
+/* Header wrapper relative positioning */
+header .wrapper {
+    position: relative;
+}
+
+/* Rest of existing styles remain the same */

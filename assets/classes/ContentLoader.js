@@ -1,4 +1,3 @@
-import { UIHelper } from './UIHelper.js';
 import { loadingManager } from './LoadingManager.js';
 
 export class ContentLoader {
@@ -11,7 +10,6 @@ export class ContentLoader {
     }
 
     async fileExists(url, taskId = null) {
-        // Check cache first
         if (this.fileCheckCache.has(url)) {
             return this.fileCheckCache.get(url);
         }
@@ -47,7 +45,7 @@ export class ContentLoader {
             try {
                 this.indexData = JSON.parse(text);
             } catch (parseError) {
-                throw new Error(`JSON Parse Error: ${parseError.message}\nCheck that index.json is valid JSON`);
+                throw new Error(`JSON Parse Error: ${parseError.message}`);
             }
             
             if (!this.indexData.cfg) {

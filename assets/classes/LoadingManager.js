@@ -4,7 +4,7 @@ export class LoadingManager {
         this.totalTasks = 0;
         this.completedTasks = 0;
         this.failedTasks = 0;
-        this.onProgress = null;
+        this.currentTask = null;
         this.onComplete = null;
         this.isActive = false;
     }
@@ -17,7 +17,8 @@ export class LoadingManager {
         if (!this.loadingTasks.has(id)) {
             this.loadingTasks.set(id, { type, status: 'loading', startTime: Date.now() });
             this.totalTasks++;
-            this.updateProgress();
+            this.currentTask = { id, type };
+            this.updateUI();
         }
     }
 
@@ -33,7 +34,13 @@ export class LoadingManager {
                 this.failedTasks++;
             }
             
-            this.updateProgress();
+            // Find next loading task
+            const nextTask = Array.from(this.loadingTasks.entries())
+                .find(([_, t]) => t.status === 'loading');
+            
+            this.currentTask = nextTask ? { id: nextTask[0], type: nextTask[1].type } : null;
+            
+            this.updateUI();
             
             if (this.completedTasks + this.failedTasks === this.totalTasks) {
                 this.hide();
@@ -41,17 +48,7 @@ export class LoadingManager {
         }
     }
 
-    updateProgress() {
-        const total = this.totalTasks;
-        const completed = this.completedTasks + this.failedTasks;
-        const percent = total > 0 ? (completed / total) * 100 : 0;
-        
-        const activeTasks = Array.from(this.loadingTasks.values())
-            .filter(t => t.status === 'loading');
-        
-        const currentTask = activeTasks[0];
-        const currentType = currentTask?.type || '';
-        
+    updateUI() {
         const typeNames = {
             'index': 'Загрузка индекса',
             'markdown': 'Загрузка документации',
@@ -63,8 +60,7 @@ export class LoadingManager {
             'readme': 'Загрузка readme'
         };
         
-        const typeNameRu = typeNames[currentType] || currentType;
-        const typeNameEn = {
+        const typeNamesEn = {
             'index': 'Loading index',
             'markdown': 'Loading documentation',
             'file': 'Checking files',
@@ -73,49 +69,45 @@ export class LoadingManager {
             'footer': 'Loading footer',
             'changelog': 'Loading changelog',
             'readme': 'Loading readme'
-        }[currentType] || currentType;
+        };
         
         // Try to get current locale
         const isRu = document.documentElement.lang === 'ru' || 
                      (localStorage.getItem('locale') || 'ru') === 'ru';
         
-        const message = isRu ? typeNameRu : typeNameEn;
-        const progressText = isRu ? 
-            `Загрузка... ${Math.round(percent)}% (${completed}/${total})` :
-            `Loading... ${Math.round(percent)}% (${completed}/${total})`;
-        
-        this.updateUI(percent, message, progressText, completed, total);
-        
-        if (this.onProgress) {
-            this.onProgress(percent, completed, total, currentType);
+        let statusText = '';
+        if (this.currentTask) {
+            const typeName = isRu ? typeNames[this.currentTask.type] : typeNamesEn[this.currentTask.type];
+            statusText = typeName || this.currentTask.type;
         }
         
-        if (completed === total && this.onComplete) {
+        const total = this.totalTasks;
+        const completed = this.completedTasks + this.failedTasks;
+        
+        this.updateUIElements(statusText, completed, total);
+        
+        if (this.onComplete && completed === total) {
             this.onComplete(this.failedTasks === 0);
         }
     }
 
-    updateUI(percent, currentTask, progressText, completed, total) {
+    updateUIElements(statusText, completed, total) {
         let overlay = document.getElementById('progress-overlay');
         if (!overlay) return;
         
-        const bar = overlay.querySelector('.progress-bar-fill');
         const messageEl = overlay.querySelector('.progress-message');
-        const textEl = overlay.querySelector('.progress-text');
-        const countEl = overlay.querySelector('.progress-count');
+        const statusEl = overlay.querySelector('.progress-status');
         
-        if (bar) bar.style.width = `${percent}%`;
-        if (messageEl) messageEl.textContent = currentTask;
-        if (textEl) textEl.textContent = progressText;
-        if (countEl) countEl.textContent = `${completed}/${total}`;
+        if (messageEl && statusText) {
+            messageEl.textContent = statusText;
+        }
         
-        // Change spinner to progress bar when we have tasks
-        const spinner = overlay.querySelector('.spinner');
-        const progressBarWrapper = overlay.querySelector('.progress-bar-wrapper');
-        
-        if (total > 1 && spinner && progressBarWrapper) {
-            spinner.style.display = 'none';
-            progressBarWrapper.style.display = 'block';
+        if (statusEl) {
+            if (total > 0) {
+                statusEl.textContent = `${completed}/${total}`;
+            } else {
+                statusEl.textContent = '';
+            }
         }
     }
 
@@ -130,14 +122,8 @@ export class LoadingManager {
             overlay.innerHTML = `
                 <div class="progress-container">
                     <div class="spinner"></div>
-                    <div class="progress-bar-wrapper" style="display: none;">
-                        <div class="progress-bar">
-                            <div class="progress-bar-fill"></div>
-                        </div>
-                    </div>
-                    <div class="progress-message"></div>
-                    <div class="progress-text"></div>
-                    <div class="progress-count"></div>
+                    <div class="progress-message">Загрузка...</div>
+                    <div class="progress-status"></div>
                 </div>
             `;
             document.body.appendChild(overlay);
@@ -163,6 +149,7 @@ export class LoadingManager {
         this.totalTasks = 0;
         this.completedTasks = 0;
         this.failedTasks = 0;
+        this.currentTask = null;
         this.isActive = false;
     }
 
