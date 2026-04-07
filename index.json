@@ -17,86 +17,9 @@
           "download": true
         }
       ]
-<<<<<<< HEAD
     }
   },
   "files": {
-=======
-    },
-    "folders": {
-      "releases": {
-        "header": "releases/header.md"
-      },
-      "releases/25.12.2": {
-        "header": "releases/25.12.2/header.md",
-        "footer": "releases/25.12.2/footer.md"
-      }
-    }
-  },
-  "files": {
-    "CNAME": {
-      "__INFO__": {
-        "icon": "file",
-        "type": "file",
-        "size": 14,
-        "date": 1775575674
-      },
-      "sha256sum": "e6b4726ed7afbd913387ecb3cc0efb7be7339384f24da7e3a02910ef64880c4c"
-    },
-    "assets": {
-      "__INFO__": {
-        "icon": "folder",
-        "type": "dir",
-        "size": 4096,
-        "date": 1775575674
-      },
-      "script.js": {
-        "__INFO__": {
-          "icon": "file",
-          "type": "file",
-          "size": 39878,
-          "date": 1775575674
-        },
-        "sha256sum": "2a821bc92f531207c22b131620a21c07bbb7ab8fd1feba6edf5a01b2bd5011b6"
-      },
-      "styles.css": {
-        "__INFO__": {
-          "icon": "file",
-          "type": "file",
-          "size": 22761,
-          "date": 1775575674
-        },
-        "sha256sum": "290214bbd257abf918f2226d543551900fee5dab044b454493d867100360db59"
-      }
-    },
-    "changelog.md": {
-      "__INFO__": {
-        "icon": "file",
-        "type": "file",
-        "size": 613,
-        "date": 1775575674
-      },
-      "sha256sum": "40dbccb8b0b6077fc67389a89f5c4f8a0220e68e60f7b1667627d3669ea3f4cb"
-    },
-    "generator.py": {
-      "__INFO__": {
-        "icon": "file",
-        "type": "file",
-        "size": 1210,
-        "date": 1775575674
-      },
-      "sha256sum": "c276bdb2bfce866b19191571bd876210abac8ec7ad80d047d23e9c0524fa4a3a"
-    },
-    "index.html": {
-      "__INFO__": {
-        "icon": "file",
-        "type": "file",
-        "size": 3965,
-        "date": 1775575674
-      },
-      "sha256sum": "8cb64b0af995c022af34917a6ebc38e75526e3fad5c4b909b643fd5106b45e88"
-    },
->>>>>>> 228f28e234f9e8ffaf67c986c13efa95069f6bc3
     "releases": {
       "__INFO__": {
         "icon": "folder",
@@ -163,18 +86,6 @@
             }
           }
         }
-<<<<<<< HEAD
-=======
-      },
-      "header.md": {
-        "__INFO__": {
-          "icon": "file",
-          "type": "file",
-          "size": 303,
-          "date": 1775575674
-        },
-        "sha256sum": "dcbbc71cf7b8c96ad9e903df96c6ccecaf738958f1337532e16de119ef65939f"
->>>>>>> 228f28e234f9e8ffaf67c986c13efa95069f6bc3
       }
     },
     "scripts": {
