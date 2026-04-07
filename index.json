@@ -17,98 +17,9 @@
           "download": true
         }
       ]
-    },
-    "folders": {
-      "releases": {
-        "header": "releases/header.md",
-        "footer": "releases/footer.md",
-        "info": "ℹ️ Все доступные релизы собраны для архитектур x86_64 и aarch64",
-        "warning": "⚠️ Релизы старше 6 месяцев считаются устаревшими"
-      },
-      "releases/25.12.2": {
-        "header": "releases/25.12.2/header.md",
-        "footer": "releases/25.12.2/footer.md",
-        "changelog": "releases/25.12.2/changelog.md",
-        "success": "✅ Этот релиз протестирован и стабилен для production использования",
-        "notice": "📌 Рекомендуется обновиться с предыдущих версий"
-      },
-      "releases/25.12.2/targets/x86/64": {
-        "header": "releases/25.12.2/targets/x86/64/header.md",
-        "notice": "⚠️ Эти сборки только для x86_64!",
-        "readme": "releases/25.12.2/targets/x86/64/readme.md",
-        "warning": "⚠️ Убедитесь, что ваш процессор поддерживает SSE4.2 инструкции",
-        "info": "ℹ️ В этой сборке включена поддержка VirtIO драйверов"
-      },
-      "releases/25.12.2/targets/x86/64/packages": {
-        "error": "❌ Некоторые пакеты могут отсутствовать из-за проблем со сборкой",
-        "notice": "📌 Все пакеты подписаны ключом репозитория",
-        "info": "ℹ️ Доступно более 500 дополнительных пакетов"
-      }
     }
   },
   "files": {
-    "CNAME": {
-      "__INFO__": {
-        "icon": "file",
-        "type": "file",
-        "size": 14,
-        "date": 1775565905
-      },
-      "sha256sum": "e6b4726ed7afbd913387ecb3cc0efb7be7339384f24da7e3a02910ef64880c4c"
-    },
-    "assets": {
-      "__INFO__": {
-        "icon": "folder",
-        "type": "dir",
-        "size": 4096,
-        "date": 1775565905
-      },
-      "script.js": {
-        "__INFO__": {
-          "icon": "file",
-          "type": "file",
-          "size": 35668,
-          "date": 1775565905
-        },
-        "sha256sum": "b17962d4abe628e307ed9ca533ba2a655a74df6ed5832b53acf904b281d8318c"
-      },
-      "styles.css": {
-        "__INFO__": {
-          "icon": "file",
-          "type": "file",
-          "size": 22761,
-          "date": 1775565905
-        },
-        "sha256sum": "290214bbd257abf918f2226d543551900fee5dab044b454493d867100360db59"
-      }
-    },
-    "changelog.md": {
-      "__INFO__": {
-        "icon": "file",
-        "type": "file",
-        "size": 613,
-        "date": 1775565905
-      },
-      "sha256sum": "40dbccb8b0b6077fc67389a89f5c4f8a0220e68e60f7b1667627d3669ea3f4cb"
-    },
-    "generator.py": {
-      "__INFO__": {
-        "icon": "file",
-        "type": "file",
-        "size": 1210,
-        "date": 1775565905
-      },
-      "sha256sum": "c276bdb2bfce866b19191571bd876210abac8ec7ad80d047d23e9c0524fa4a3a"
-    },
-    "index.html": {
-      "__INFO__": {
-        "icon": "file",
-        "type": "file",
-        "size": 3965,
-        "date": 1775565905
-      },
-      "sha256sum": "8cb64b0af995c022af34917a6ebc38e75526e3fad5c4b909b643fd5106b45e88"
-    },
     "releases": {
       "__INFO__": {
         "icon": "folder",
@@ -160,15 +71,6 @@
             }
           }
         }
-      },
-      "header.md": {
-        "__INFO__": {
-          "icon": "file",
-          "type": "file",
-          "size": 303,
-          "date": 1775565905
-        },
-        "sha256sum": "dcbbc71cf7b8c96ad9e903df96c6ccecaf738958f1337532e16de119ef65939f"
       }
     },
     "scripts": {
