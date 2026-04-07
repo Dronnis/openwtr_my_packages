@@ -2,28 +2,86 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <title>D-WRT - Navigation</title>
+    <title>404 - D-WRT</title>
     <link rel="icon" href="/favicon.ico">
     <meta name="color-scheme" content="light dark">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/assets/styles.css">
+    <style>
+        .error-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9eef3 100%);
+        }
+        .error-card {
+            background: white;
+            border-radius: 32px;
+            padding: 48px;
+            text-align: center;
+            max-width: 500px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1);
+        }
+        .error-code {
+            font-size: 120px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #0066cc, #00a3cc);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 16px;
+        }
+        .error-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 12px;
+        }
+        .error-message {
+            color: #64748b;
+            margin-bottom: 32px;
+        }
+        .home-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 28px;
+            background: #0066cc;
+            color: white;
+            text-decoration: none;
+            border-radius: 40px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .home-link:hover {
+            background: #0052a3;
+            transform: translateY(-2px);
+        }
+        @media (prefers-color-scheme: dark) {
+            .error-page {
+                background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            }
+            .error-card {
+                background: #1e293b;
+            }
+            .error-title {
+                color: #f1f5f9;
+            }
+            .error-message {
+                color: #94a3b8;
+            }
+        }
+    </style>
 </head>
 <body>
-    <header>
-        <div class="wrapper">
-            <!-- Header content will be filled by JS -->
+    <div class="error-page">
+        <div class="error-card">
+            <div class="error-code">404</div>
+            <div class="error-title">Страница не найдена</div>
+            <div class="error-message">Извините, запрошенная страница не существует или была перемещена.</div>
+            <a href="/" class="home-link">← Вернуться на главную</a>
         </div>
-    </header>
-    <div class="wrapper">
-        <div class="breadcrumbs"></div>
-        <h1></h1>
-        <main>
-            <!-- Content will be dynamically loaded -->
-        </main>
     </div>
-    <footer>
-        <!-- Footer content will be filled by JS -->
-    </footer>
-    <script type="module" src="/assets/main.js"></script>
 </body>
 </html>
