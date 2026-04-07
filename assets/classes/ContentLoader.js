@@ -1,4 +1,5 @@
 import { UIHelper } from './UIHelper.js';
+import { loadingManager } from './LoadingManager.js';
 
 export class ContentLoader {
     constructor(localization) {
@@ -6,19 +7,34 @@ export class ContentLoader {
         this.indexData = null;
         this.config = null;
         this.loadError = null;
+        this.fileCheckCache = new Map();
     }
 
-    async fileExists(url) {
+    async fileExists(url, taskId = null) {
+        // Check cache first
+        if (this.fileCheckCache.has(url)) {
+            return this.fileCheckCache.get(url);
+        }
+        
+        const id = taskId || `file_${url}`;
+        loadingManager.startTask(id, 'file');
+        
         try {
             const response = await fetch(url, { method: 'HEAD' });
-            return response.ok;
+            const exists = response.ok;
+            this.fileCheckCache.set(url, exists);
+            loadingManager.completeTask(id, exists);
+            return exists;
         } catch {
+            this.fileCheckCache.set(url, false);
+            loadingManager.completeTask(id, false);
             return false;
         }
     }
 
     async loadIndex() {
-        UIHelper.showProgress(this.localization.t('loading_index'));
+        const indexId = 'load_index';
+        loadingManager.startTask(indexId, 'index');
         
         try {
             const response = await fetch('/index.json');
@@ -28,14 +44,12 @@ export class ContentLoader {
             
             const text = await response.text();
             
-            // Try to parse JSON with error handling
             try {
                 this.indexData = JSON.parse(text);
             } catch (parseError) {
                 throw new Error(`JSON Parse Error: ${parseError.message}\nCheck that index.json is valid JSON`);
             }
             
-            // Validate structure
             if (!this.indexData.cfg) {
                 throw new Error('Invalid index.json: missing "cfg" section');
             }
@@ -45,16 +59,13 @@ export class ContentLoader {
             }
             
             this.config = this.indexData.cfg;
-            
-            UIHelper.updateProgressMessage(this.localization.t('index_loaded'));
-            setTimeout(UIHelper.hideProgress, 500);
+            loadingManager.completeTask(indexId, true);
             
             return this.indexData;
         } catch (error) {
             console.error('Failed to load index.json:', error);
             this.loadError = error.message;
-            UIHelper.updateProgressMessage(`${this.localization.t('error_loading_index')}: ${error.message}`);
-            setTimeout(UIHelper.hideProgress, 3000);
+            loadingManager.completeTask(indexId, false);
             throw error;
         }
     }
@@ -108,18 +119,28 @@ export class ContentLoader {
         return children;
     }
 
-    async loadMarkdown(url) {
+    async loadMarkdown(url, type = 'markdown') {
         if (!url) return null;
         
+        const id = `markdown_${url}`;
+        loadingManager.startTask(id, type);
+        
         try {
-            const exists = await this.fileExists(url);
-            if (!exists) return null;
+            const exists = await this.fileExists(url, `check_${url}`);
+            if (!exists) {
+                loadingManager.completeTask(id, false);
+                return null;
+            }
             
             const response = await fetch(url);
             const text = await response.text();
-            return this.renderMarkdownFromText(text);
+            const html = this.renderMarkdownFromText(text);
+            
+            loadingManager.completeTask(id, true);
+            return html;
         } catch (error) {
             console.error('Failed to load markdown:', url, error);
+            loadingManager.completeTask(id, false);
             return null;
         }
     }
@@ -165,50 +186,62 @@ export class ContentLoader {
             messages: []
         };
         
-        // Fix: ensure proper path construction with slash
         const cleanPath = folderPath.replace(/^\/+|\/+$/g, '');
         const basePath = cleanPath ? `/${cleanPath}` : '';
         
         const messageFiles = [
-            { file: '.notice.md', type: 'notice' },
-            { file: '.info.md', type: 'info' },
-            { file: '.success.md', type: 'success' },
-            { file: '.warning.md', type: 'warning' },
-            { file: '.error.md', type: 'error' }
+            { file: '.notice.md', type: 'notice', taskType: 'message' },
+            { file: '.info.md', type: 'info', taskType: 'message' },
+            { file: '.success.md', type: 'success', taskType: 'message' },
+            { file: '.warning.md', type: 'warning', taskType: 'message' },
+            { file: '.error.md', type: 'error', taskType: 'message' }
         ];
         
+        // Load messages
         for (const msg of messageFiles) {
             const msgPath = `${basePath}${msg.file}`;
-            if (await this.fileExists(msgPath)) {
-                const response = await fetch(msgPath);
-                const text = await response.text();
-                if (text && text.trim()) {
-                    content.messages.push({
-                        type: msg.type,
-                        content: this.renderMarkdownFromText(text)
-                    });
+            const exists = await this.fileExists(msgPath, `check_${msgPath}`);
+            if (exists) {
+                const taskId = `load_${msg.file}_${basePath || 'root'}`;
+                loadingManager.startTask(taskId, msg.taskType);
+                try {
+                    const response = await fetch(msgPath);
+                    const text = await response.text();
+                    if (text && text.trim()) {
+                        content.messages.push({
+                            type: msg.type,
+                            content: this.renderMarkdownFromText(text)
+                        });
+                    }
+                    loadingManager.completeTask(taskId, true);
+                } catch (error) {
+                    loadingManager.completeTask(taskId, false);
                 }
             }
         }
         
+        // Load header
         const headerPath = `${basePath}/header.md`;
-        if (await this.fileExists(headerPath)) {
-            content.header = await this.loadMarkdown(headerPath);
+        if (await this.fileExists(headerPath, `check_header_${basePath || 'root'}`)) {
+            content.header = await this.loadMarkdown(headerPath, 'header');
         }
         
+        // Load footer
         const footerPath = `${basePath}/footer.md`;
-        if (await this.fileExists(footerPath)) {
-            content.footer = await this.loadMarkdown(footerPath);
+        if (await this.fileExists(footerPath, `check_footer_${basePath || 'root'}`)) {
+            content.footer = await this.loadMarkdown(footerPath, 'footer');
         }
         
+        // Load changelog
         const changelogPath = `${basePath}/changelog.md`;
-        if (await this.fileExists(changelogPath)) {
-            content.changelog = await this.loadMarkdown(changelogPath);
+        if (await this.fileExists(changelogPath, `check_changelog_${basePath || 'root'}`)) {
+            content.changelog = await this.loadMarkdown(changelogPath, 'changelog');
         }
         
+        // Load readme
         const readmePath = `${basePath}/readme.md`;
-        if (await this.fileExists(readmePath)) {
-            content.readme = await this.loadMarkdown(readmePath);
+        if (await this.fileExists(readmePath, `check_readme_${basePath || 'root'}`)) {
+            content.readme = await this.loadMarkdown(readmePath, 'readme');
         }
         
         return content;

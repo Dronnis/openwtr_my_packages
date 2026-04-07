@@ -1,4 +1,5 @@
 import { UIHelper } from './UIHelper.js';
+import { loadingManager } from './LoadingManager.js';
 
 export class FileListRenderer {
     constructor(contentLoader, localization) {
@@ -163,15 +164,24 @@ export class FileListRenderer {
             tbody.appendChild(row);
         }
         
-        // Render files and verify existence
+        // Render files with existence check (tracked individually)
+        const fileCheckPromises = [];
+        
         for (const [name, data] of Object.entries(files)) {
             const info = data.__INFO__ || data;
             const filePath = currentPath === '/' ? `/${name}` : `${currentPath}/${name}`;
             const size = info.size || 0;
             const sha256 = info.sha256sum || '';
             
-            const exists = await this.contentLoader.fileExists(filePath);
-            
+            // Track file check in loading manager
+            const checkPromise = this.contentLoader.fileExists(filePath, `check_file_${filePath}`)
+                .then(exists => ({ name, data, info, filePath, size, sha256, exists }));
+            fileCheckPromises.push(checkPromise);
+        }
+        
+        const fileResults = await Promise.all(fileCheckPromises);
+        
+        for (const { name, info, filePath, size, sha256, exists } of fileResults) {
             if (!exists) {
                 const row = document.createElement('tr');
                 row.className = 'file missing';
