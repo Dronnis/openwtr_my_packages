@@ -9,6 +9,7 @@ on:
       - '*.apk'
       - '*.gz'
       - 'changelog.md'
+      - '!assets/**'
   workflow_dispatch:
 
 permissions:

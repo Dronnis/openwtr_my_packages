@@ -1,21 +1,24 @@
 {
-  "cfg": {
-    "title": "Extra Packages for OpenWrt",
+"cfg": {
+    "title": "D-WRT - Extra Packages for OpenWrt",
     "favicon": "/favicon.ico",
     "mainPage": {
       "latestRelease": "releases/25.12.2",
       "showChangelog": true,
       "changelogFile": "changelog.md",
       "quickLinks": [
-        {
-          "label": "📦 Все релизы",
-          "path": "releases/"
-        },
-        {
-          "label": "🔑 Ключ репозитория",
-          "path": "key-build.pub",
-          "download": true
-        }
+        { "label": "📦 Все релизы", "path": "releases/" },
+        { "label": "🔑 Ключ репозитория", "path": "key-build.pub", "download": true },
+        { "label": "📖 Документация", "path": "https://github.com/username/repo/wiki" },
+        { "label": "💬 Поддержка", "path": "https://t.me/username" }
+      ]
+    },
+    "footer": {
+      "links": [
+        { "label": "GitHub", "url": "https://github.com/username/repo" },
+        { "label": "Telegram", "url": "https://t.me/username" },
+        { "label": "Documentation", "url": "https://wiki.example.com" },
+        { "label": "Issues", "url": "https://github.com/username/repo/issues" }
       ]
     }
   },
