@@ -1,7 +1,5 @@
 import { loadingManager } from '../shared/LoadingManager.js';
 
-// Декларируем marked из глобальной переменной
-declare const marked: any;
 
 export class ContentLoader {
     constructor(localization) {
