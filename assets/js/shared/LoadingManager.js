@@ -48,6 +48,7 @@ export class LoadingManager {
     updateUI() {
         const typeNames = {
             'index': 'Loading index',
+            'info': 'Loading metadata',
             'markdown': 'Loading documentation',
             'file': 'Checking files',
             'message': 'Loading messages',
@@ -72,6 +73,7 @@ export class LoadingManager {
     getRussianName(type) {
         const names = {
             'index': 'Загрузка индекса',
+            'info': 'Загрузка метаданных',
             'markdown': 'Загрузка документации',
             'file': 'Проверка файлов',
             'message': 'Загрузка уведомлений',

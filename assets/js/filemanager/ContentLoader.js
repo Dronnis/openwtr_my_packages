@@ -5,6 +5,7 @@ export class ContentLoader {
         this.localization = localization;
         this.indexData = null;
         this.config = null;
+        this.infoData = null;
         this.loadError = null;
         this.fileCheckCache = new Map();
     }
@@ -58,12 +59,62 @@ export class ContentLoader {
             
             this.config = this.indexData.cfg;
             loadingManager.completeTask(indexId, true);
+            
+            await this.loadInfoFile();
+            
             return this.indexData;
         } catch (error) {
             this.loadError = error.message;
             loadingManager.completeTask(indexId, false);
             throw error;
         }
+    }
+
+    async loadInfoFile() {
+        const infoId = 'load_info';
+        loadingManager.startTask(infoId, 'info');
+        
+        try {
+            const exists = await this.fileExists('/info.json', 'check_info');
+            if (exists) {
+                const response = await fetch('/info.json');
+                const text = await response.text();
+                this.infoData = JSON.parse(text);
+                loadingManager.completeTask(infoId, true);
+            } else {
+                this.infoData = { version: "1.0", paths: {} };
+                loadingManager.completeTask(infoId, true);
+            }
+        } catch (error) {
+            console.warn('Failed to load info.json:', error);
+            this.infoData = { version: "1.0", paths: {} };
+            loadingManager.completeTask(infoId, false);
+        }
+    }
+
+    getPathInfo(path) {
+        if (!this.infoData || !this.infoData.paths) {
+            return null;
+        }
+        
+        const cleanPath = path.replace(/^\/+|\/+$/g, '');
+        const normalizedPath = cleanPath ? `/${cleanPath}` : '/';
+        
+        let bestMatch = null;
+        let bestMatchLength = -1;
+        
+        for (const [key, value] of Object.entries(this.infoData.paths)) {
+            if (normalizedPath === key) {
+                return value;
+            }
+            
+            if (normalizedPath.startsWith(key) && key.length > bestMatchLength) {
+                bestMatch = value;
+                bestMatchLength = key.length;
+            }
+        }
+        
+        return bestMatch;
     }
 
     getNodeInfo(path) {
@@ -150,7 +201,7 @@ export class ContentLoader {
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
             .replace(/\*(.*?)\*/g, '<em>$1</em>')
             .replace(/~~(.*?)~~/g, '<del>$1</del>')
-            .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank">$1</a>')
+            .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
             .replace(/`(.*?)`/g, '<code>$1</code>')
             .replace(/^\- (.*$)/gm, '<li>$1</li>')
             .replace(/^\* (.*$)/gm, '<li>$1</li>')
@@ -182,56 +233,65 @@ export class ContentLoader {
         };
         
         const cleanPath = folderPath.replace(/^\/+|\/+$/g, '');
-        const basePath = cleanPath ? `/${cleanPath}` : '';
+        const basePath = cleanPath ? `/${cleanPath}` : '/';
         
-        const messageFiles = [
-            { file: '.notice.md', type: 'notice', taskType: 'message' },
-            { file: '.info.md', type: 'info', taskType: 'message' },
-            { file: '.success.md', type: 'success', taskType: 'message' },
-            { file: '.warning.md', type: 'warning', taskType: 'message' },
-            { file: '.error.md', type: 'error', taskType: 'message' }
-        ];
+        const pathInfo = this.getPathInfo(basePath);
         
-        for (const msg of messageFiles) {
-            const msgPath = `${basePath}${msg.file}`;
-            const exists = await this.fileExists(msgPath, `check_${msgPath}`);
-            if (exists) {
-                const taskId = `load_${msg.file}_${basePath || 'root'}`;
-                loadingManager.startTask(taskId, msg.taskType);
-                try {
-                    const response = await fetch(msgPath);
-                    const text = await response.text();
-                    if (text && text.trim()) {
-                        content.messages.push({
-                            type: msg.type,
-                            content: this.renderMarkdownFromText(text)
-                        });
-                    }
-                    loadingManager.completeTask(taskId, true);
-                } catch (error) {
-                    loadingManager.completeTask(taskId, false);
+        if (pathInfo) {
+            if (pathInfo.header) {
+                const headerPath = `${basePath === '/' ? '' : basePath}${pathInfo.header}`;
+                if (await this.fileExists(headerPath, `check_header_${basePath}`)) {
+                    content.header = await this.loadMarkdown(headerPath, 'header');
                 }
             }
-        }
-        
-        const headerPath = `${basePath}/header.md`;
-        if (await this.fileExists(headerPath, `check_header_${basePath || 'root'}`)) {
-            content.header = await this.loadMarkdown(headerPath, 'header');
-        }
-        
-        const footerPath = `${basePath}/footer.md`;
-        if (await this.fileExists(footerPath, `check_footer_${basePath || 'root'}`)) {
-            content.footer = await this.loadMarkdown(footerPath, 'footer');
-        }
-        
-        const changelogPath = `${basePath}/changelog.md`;
-        if (await this.fileExists(changelogPath, `check_changelog_${basePath || 'root'}`)) {
-            content.changelog = await this.loadMarkdown(changelogPath, 'changelog');
-        }
-        
-        const readmePath = `${basePath}/readme.md`;
-        if (await this.fileExists(readmePath, `check_readme_${basePath || 'root'}`)) {
-            content.readme = await this.loadMarkdown(readmePath, 'readme');
+            
+            if (pathInfo.footer) {
+                const footerPath = `${basePath === '/' ? '' : basePath}${pathInfo.footer}`;
+                if (await this.fileExists(footerPath, `check_footer_${basePath}`)) {
+                    content.footer = await this.loadMarkdown(footerPath, 'footer');
+                }
+            }
+            
+            if (pathInfo.changelog) {
+                const changelogPath = `${basePath === '/' ? '' : basePath}${pathInfo.changelog}`;
+                if (await this.fileExists(changelogPath, `check_changelog_${basePath}`)) {
+                    content.changelog = await this.loadMarkdown(changelogPath, 'changelog');
+                }
+            }
+            
+            if (pathInfo.readme) {
+                const readmePath = `${basePath === '/' ? '' : basePath}${pathInfo.readme}`;
+                if (await this.fileExists(readmePath, `check_readme_${basePath}`)) {
+                    content.readme = await this.loadMarkdown(readmePath, 'readme');
+                }
+            }
+            
+            if (pathInfo.messages) {
+                const messageTypes = ['notice', 'info', 'success', 'warning', 'error'];
+                for (const msgType of messageTypes) {
+                    if (pathInfo.messages[msgType]) {
+                        const msgPath = `${basePath === '/' ? '' : basePath}${pathInfo.messages[msgType]}`;
+                        const exists = await this.fileExists(msgPath, `check_msg_${msgPath}`);
+                        if (exists) {
+                            const taskId = `load_${msgType}_${basePath}`;
+                            loadingManager.startTask(taskId, 'message');
+                            try {
+                                const response = await fetch(msgPath);
+                                const text = await response.text();
+                                if (text && text.trim()) {
+                                    content.messages.push({
+                                        type: msgType,
+                                        content: this.renderMarkdownFromText(text)
+                                    });
+                                }
+                                loadingManager.completeTask(taskId, true);
+                            } catch (error) {
+                                loadingManager.completeTask(taskId, false);
+                            }
+                        }
+                    }
+                }
+            }
         }
         
         return content;
