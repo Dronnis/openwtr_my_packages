@@ -5,82 +5,64 @@ window.app = {
     config: null
 };
 
-// Show progress bar
+// Show progress with spinner
+let progressOverlay = null;
+
 function showProgress(message = 'Loading...') {
-    let overlay = document.getElementById('progress-overlay');
-    if (!overlay) {
-        overlay = document.createElement('div');
-        overlay.id = 'progress-overlay';
-        overlay.className = 'progress-overlay';
-        overlay.innerHTML = `
-            <div class="progress-container">
-                <div class="progress-bar-wrapper">
-                    <div class="progress-bar" id="progress-bar">0%</div>
-                </div>
-                <div class="progress-text" id="progress-text">${message}</div>
-            </div>
-        `;
-        document.body.appendChild(overlay);
+    if (progressOverlay) {
+        progressOverlay.style.display = 'flex';
+        const messageEl = progressOverlay.querySelector('.progress-message');
+        if (messageEl) messageEl.textContent = message;
+        return;
     }
-    overlay.style.display = 'flex';
-    updateProgress(0, message);
+    
+    progressOverlay = document.createElement('div');
+    progressOverlay.id = 'progress-overlay';
+    progressOverlay.className = 'progress-overlay';
+    progressOverlay.innerHTML = `
+        <div class="progress-container">
+            <div class="spinner"></div>
+            <div class="progress-message">${message}</div>
+        </div>
+    `;
+    document.body.appendChild(progressOverlay);
 }
 
-function updateProgress(percent, message) {
-    const bar = document.getElementById('progress-bar');
-    const text = document.getElementById('progress-text');
-    if (bar) {
-        const p = Math.min(100, Math.max(0, percent));
-        bar.style.width = p + '%';
-        bar.textContent = p + '%';
-    }
-    if (text && message) {
-        text.textContent = message;
+function updateProgressMessage(message) {
+    if (progressOverlay) {
+        const messageEl = progressOverlay.querySelector('.progress-message');
+        if (messageEl) messageEl.textContent = message;
     }
 }
 
 function hideProgress() {
-    const overlay = document.getElementById('progress-overlay');
-    if (overlay) {
-        overlay.style.display = 'none';
+    if (progressOverlay) {
+        progressOverlay.style.display = 'none';
     }
 }
 
-// Load index.json with progress
+// Load index.json
 async function loadIndex() {
     showProgress('Loading repository index...');
     
     try {
         const response = await fetch('/index.json');
-        const total = parseInt(response.headers.get('content-length') || '0');
-        let loaded = 0;
-        
-        const reader = response.body.getReader();
-        const chunks = [];
-        
-        while (true) {
-            const {done, value} = await reader.read();
-            if (done) break;
-            
-            chunks.push(value);
-            loaded += value.length;
-            if (total) {
-                updateProgress((loaded / total) * 100, `Loading index... ${Math.round((loaded / total) * 100)}%`);
-            }
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
         }
         
-        const blob = new Blob(chunks);
-        const text = await blob.text();
+        const text = await response.text();
         window.app.indexData = JSON.parse(text);
         window.app.config = window.app.indexData.cfg;
         
-        updateProgress(100, 'Complete!');
+        updateProgressMessage('Index loaded successfully');
         setTimeout(hideProgress, 500);
         
         return window.app.indexData;
     } catch (error) {
         console.error('Failed to load index.json:', error);
-        hideProgress();
+        updateProgressMessage('Error loading index.json');
+        setTimeout(hideProgress, 2000);
         throw error;
     }
 }
@@ -89,8 +71,8 @@ async function loadIndex() {
 function getNodeInfo(path) {
     if (!window.app.indexData) return null;
     
-    // Remove leading and trailing slashes, split into parts
-    const cleanPath = path.replace(/^\/+|\/+$/g, '');
+    // Remove leading slash, but keep empty string for root
+    const cleanPath = path.replace(/^\/+/, '');
     if (!cleanPath) return { type: 'root' };
     
     const parts = cleanPath.split('/');
@@ -134,7 +116,7 @@ function getFolderConfig(path) {
 function getChildren(path) {
     if (!window.app.indexData) return null;
     
-    const cleanPath = path.replace(/^\/+|\/+$/g, '');
+    const cleanPath = path.replace(/^\/+/, '');
     if (!cleanPath) {
         // Return root files
         return window.app.indexData.files;
@@ -162,17 +144,25 @@ function getChildren(path) {
     return children;
 }
 
-// Check if path is a directory
-function isDirectory(path) {
-    const info = getNodeInfo(path);
-    return info && (info.type === 'dir' || info.__INFO__?.type === 'dir');
+// Check if URL exists (for markdown files)
+async function urlExists(url) {
+    try {
+        const response = await fetch(url, { method: 'HEAD' });
+        return response.ok;
+    } catch {
+        return false;
+    }
 }
 
-// Render markdown (simple version)
-async function renderMarkdown(url) {
-    if (!url) return '';
+// Render markdown with existence check
+async function renderMarkdown(url, silent = true) {
+    if (!url) return null;
     
     try {
+        // Check if file exists first
+        const exists = await urlExists(url);
+        if (!exists) return null;
+        
         const response = await fetch(url);
         const text = await response.text();
         
@@ -190,15 +180,14 @@ async function renderMarkdown(url) {
             .replace(/\n\n/g, '</p><p>')
             .replace(/\n/g, '<br>');
         
-        // Wrap in paragraphs if not already wrapped
         if (!html.startsWith('<')) {
             html = `<p>${html}</p>`;
         }
         
         return `<div class="markdown-content">${html}</div>`;
     } catch (error) {
-        console.error('Failed to load markdown:', error);
-        return '<p>Failed to load content</p>';
+        if (!silent) console.error('Failed to load markdown:', url, error);
+        return null;
     }
 }
 
@@ -225,7 +214,6 @@ function getIcon(type, iconName) {
         return `<svg class="icon icon-tabler icon-tabler-folder-filled" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="currentColor"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 3a1 1 0 0 1 .608 .206l.1 .087l2.706 2.707h6.586a3 3 0 0 1 2.995 2.824l.005 .176v8a3 3 0 0 1 -2.824 2.995l-.176 .005h-14a3 3 0 0 1 -2.995 -2.824l-.005 -.176v-11a3 3 0 0 1 2.824 -2.995l.176 -.005h4z"/></svg>`;
     }
     
-    // Different icons for different file types
     if (iconName === 'package') {
         return `<svg class="icon icon-tabler" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3zM12 12l8-4.5M12 12v9M12 12L4 7.5"/></svg>`;
     }
@@ -245,7 +233,7 @@ function getIcon(type, iconName) {
 function buildBreadcrumbs(path) {
     const cleanPath = path.replace(/^\/+|\/+$/g, '');
     const parts = cleanPath.split('/').filter(p => p);
-    const breadcrumbs = [{ name: '/', path: '/' }];
+    const breadcrumbs = [{ name: 'Главная', path: '/' }];
     
     let currentPath = '';
     for (const part of parts) {
@@ -283,7 +271,7 @@ function renderListing(items, currentPath) {
         const row = document.createElement('tr');
         row.className = 'file';
         row.innerHTML = `
-            <td><td style="padding-left: 10px;"><td>
+            <td><td style="padding-left: 10px;"></td>
             <td>
                 <a href="${parentPath}">
                     <svg class="icon icon-tabler" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none">
@@ -292,6 +280,7 @@ function renderListing(items, currentPath) {
                     </svg>
                     <span class="name">../</span>
                 </a>
+            </a>
             </td>
             <td class="size">—</td>
             <td class="timestamp hideable">—</td>
@@ -314,6 +303,7 @@ function renderListing(items, currentPath) {
                     ${getIcon('dir', info.icon)}
                     <span class="name">${name}/</span>
                 </a>
+            </a>
             </td>
             <td class="size">—</td>
             <td class="timestamp hideable">
@@ -338,6 +328,7 @@ function renderListing(items, currentPath) {
                     ${getIcon('file', info.icon)}
                     <span class="name">${name}</span>
                 </a>
+            </a>
             </td>
             <td class="size" data-size="${info.size || 0}">
                 <div class="sizebar">
@@ -408,12 +399,14 @@ async function renderMainPage() {
     // Add changelog if enabled
     if (config?.mainPage?.showChangelog && config?.mainPage?.changelogFile) {
         const changelogHtml = await renderMarkdown(config.mainPage.changelogFile);
-        html += `
-            <div class="changelog-preview">
-                <h2>📝 What's New</h2>
-                ${changelogHtml}
-            </div>
-        `;
+        if (changelogHtml) {
+            html += `
+                <div class="changelog-preview">
+                    <h2>📝 What's New</h2>
+                    ${changelogHtml}
+                </div>
+            `;
+        }
     }
     
     // Add quick links
@@ -461,7 +454,7 @@ async function renderFolderPage(path) {
     
     // Get children (directory contents)
     const children = getChildren(path);
-    if (!children) {
+    if (!children || Object.keys(children).length === 0) {
         main.innerHTML = `
             <div class="empty-state">
                 <h2>Empty Directory</h2>
@@ -483,7 +476,7 @@ async function renderFolderPage(path) {
                 <span class="meta-item"><b id="file-count">0</b> files</span>
             </div>
             <div class="view-controls">
-                <a href="javascript:setLayout('list')" id="layout-list" class="layout current">
+                <a href="javascript:void(0)" onclick="setLayout('list')" id="layout-list" class="layout current">
                     <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-layout-list" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none">
                         <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
                         <path d="M4 4m0 2a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z"></path>
@@ -491,7 +484,7 @@ async function renderFolderPage(path) {
                     </svg>
                     List
                 </a>
-                <a href="javascript:setLayout('grid')" id="layout-grid" class="layout">
+                <a href="javascript:void(0)" onclick="setLayout('grid')" id="layout-grid" class="layout">
                     <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-layout-grid" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none">
                         <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
                         <path d="M4 4m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"></path>
@@ -513,13 +506,13 @@ async function renderFolderPage(path) {
     // Add header if exists
     if (folderConfig?.header) {
         const headerHtml = await renderMarkdown(folderConfig.header);
-        html += headerHtml;
+        if (headerHtml) html += headerHtml;
     }
     
     // Add changelog if exists
     if (folderConfig?.changelog) {
         const changelogHtml = await renderMarkdown(folderConfig.changelog);
-        html += `<div class="changelog-preview">${changelogHtml}</div>`;
+        if (changelogHtml) html += `<div class="changelog-preview">${changelogHtml}</div>`;
     }
     
     // Add file listing
@@ -553,13 +546,13 @@ async function renderFolderPage(path) {
     // Add readme if exists
     if (folderConfig?.readme) {
         const readmeHtml = await renderMarkdown(folderConfig.readme);
-        html += `<div class="readme">${readmeHtml}</div>`;
+        if (readmeHtml) html += `<div class="readme">${readmeHtml}</div>`;
     }
     
     // Add footer if exists
     if (folderConfig?.footer) {
         const footerHtml = await renderMarkdown(folderConfig.footer);
-        html += footerHtml;
+        if (footerHtml) html += footerHtml;
     }
     
     main.innerHTML = html;
@@ -577,8 +570,10 @@ async function renderFolderPage(path) {
             fileCount++;
         }
     }
-    document.getElementById('dir-count').textContent = dirCount;
-    document.getElementById('file-count').textContent = fileCount;
+    const dirCountEl = document.getElementById('dir-count');
+    const fileCountEl = document.getElementById('file-count');
+    if (dirCountEl) dirCountEl.textContent = dirCount;
+    if (fileCountEl) fileCountEl.textContent = fileCount;
 }
 
 // Main initialization
@@ -610,6 +605,15 @@ async function initPage() {
     
     // Check if we're on index.html or root
     if (currentPath === '/' || currentPath === '/index.html') {
+        // Update header for main page
+        const breadcrumbDiv = document.querySelector('.breadcrumbs');
+        if (breadcrumbDiv) {
+            breadcrumbDiv.innerHTML = 'Repository Home';
+        }
+        const h1 = document.querySelector('h1');
+        if (h1) {
+            h1.innerHTML = '<a href="/">Главная</a>';
+        }
         await renderMainPage();
     } else {
         // Check if path exists in index
@@ -664,7 +668,7 @@ function initializeUI() {
     // Load layout preference from localStorage
     const savedLayout = localStorage.getItem('filemanager-layout');
     if (savedLayout) {
-        setLayout(savedLayout, false);
+        setTimeout(() => setLayout(savedLayout, false), 100);
     }
 }
 
@@ -692,12 +696,53 @@ function setLayout(layout, save = true) {
     const listing = document.querySelector('.listing');
     if (!listing) return;
     
+    // Remove existing grid container if any
+    const existingGrid = listing.querySelector('.grid-container');
+    if (existingGrid) existingGrid.remove();
+    
     if (layout === 'grid') {
         listing.classList.add('grid-view');
         listing.classList.remove('list-view');
+        
+        // Convert table to grid
+        const table = listing.querySelector('table');
+        const tbody = table.querySelector('tbody');
+        const rows = tbody.querySelectorAll('tr');
+        
+        const gridContainer = document.createElement('div');
+        gridContainer.className = 'grid-container';
+        
+        rows.forEach(row => {
+            const link = row.querySelector('td:nth-child(2) a');
+            const nameSpan = row.querySelector('.name');
+            const sizeEl = row.querySelector('.size');
+            const timeEl = row.querySelector('time');
+            
+            if (link && nameSpan) {
+                const gridItem = document.createElement('div');
+                gridItem.className = 'grid-item';
+                gridItem.innerHTML = `
+                    <a href="${link.getAttribute('href')}">
+                        ${link.innerHTML}
+                        <div class="grid-item-size">${sizeEl ? sizeEl.querySelector('.sizebar-text')?.textContent || '—' : '—'}</div>
+                        <div class="grid-item-date">${timeEl ? timeEl.getAttribute('datetime') ? formatDate(parseInt(new Date(timeEl.getAttribute('datetime')).getTime() / 1000)) : '—' : '—'}</div>
+                    </a>
+                `;
+                gridContainer.appendChild(gridItem);
+            }
+        });
+        
+        table.style.display = 'none';
+        listing.appendChild(gridContainer);
+        
     } else {
         listing.classList.add('list-view');
         listing.classList.remove('grid-view');
+        
+        const table = listing.querySelector('table');
+        if (table) {
+            table.style.display = 'table';
+        }
     }
     
     // Update button states
@@ -719,110 +764,7 @@ function setLayout(layout, save = true) {
     }
 }
 
-// Add grid view styles dynamically
-const gridStyles = document.createElement('style');
-gridStyles.textContent = `
-    .listing.grid-view table {
-        display: none;
-    }
-    .listing.grid-view .grid-container {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        gap: 16px;
-        padding: 20px;
-    }
-    .listing.list-view .grid-container {
-        display: none;
-    }
-    .listing.list-view table {
-        display: table;
-    }
-    .filter-bar {
-        padding: 15px 20px;
-        border-bottom: 1px solid #e5e9ea;
-    }
-    .filter-container {
-        position: relative;
-        display: inline-block;
-    }
-    #search-icon {
-        position: absolute;
-        left: 10px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #999;
-    }
-    #filter {
-        padding: 8px 12px 8px 35px;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-        font-size: 14px;
-        width: 250px;
-        background: white;
-    }
-    @media (prefers-color-scheme: dark) {
-        .filter-bar {
-            border-bottom-color: #2c3e4e;
-        }
-        #filter {
-            background: #1a2530;
-            border-color: #2c3e4e;
-            color: #ccc;
-        }
-    }
-    .view-controls {
-        display: flex;
-        gap: 10px;
-        margin-left: auto;
-    }
-    .layout {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        padding: 5px 10px;
-        border-radius: 5px;
-        color: #999;
-        text-decoration: none;
-    }
-    .layout.current {
-        background: #006ed3;
-        color: white;
-    }
-    .quick-links {
-        margin: 20px;
-        padding: 20px;
-        background: #f8f9fa;
-        border-radius: 8px;
-    }
-    .quick-links-grid {
-        display: flex;
-        gap: 15px;
-        flex-wrap: wrap;
-        margin-top: 15px;
-    }
-    .quick-link {
-        display: inline-block;
-        padding: 10px 20px;
-        background: white;
-        border: 1px solid #dee2e6;
-        border-radius: 5px;
-        text-decoration: none;
-        transition: all 0.2s;
-    }
-    .quick-link:hover {
-        background: #006ed3;
-        color: white;
-        border-color: #006ed3;
-    }
-    @media (prefers-color-scheme: dark) {
-        .quick-links {
-            background: #0f151c;
-        }
-        .quick-link {
-            background: #1a2530;
-            border-color: #2c3e4e;
-            color: #ccc;
-        }
-    }
-`;
-document.head.appendChild(gridStyles);
+// Make functions global
+window.filterFiles = filterFiles;
+window.setLayout = setLayout;
+window.initPage = initPage;
