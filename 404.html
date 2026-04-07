@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Redirecting...</title>
+  <script>
+    // GitHub Pages отдаёт 404 для несуществующих файлов
+    // Перенаправляем на главный index.html с путём в hash
+    const path = window.location.pathname
+      .replace(/\/+$/, '')           // убираем конечные /
+      .replace(/^\/?[^\/]+\/?/, ''); // убираем /репозиторий/
+    
+    if (path && !path.match(/\.[^\/]+$/)) { // если не файл с расширением
+      const target = '/index.html#/' + path.replace(/^\//, '');
+      location.replace(target);
+    }
+  </script>
+</head>
+<body>
+  <p>🔗 Перенаправление... <a href="/index.html">Если не сработало, нажмите сюда</a></p>
+</body>
+</html>
