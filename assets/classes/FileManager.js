@@ -1,15 +1,28 @@
 import { UIHelper } from './UIHelper.js';
 import { ContentLoader } from './ContentLoader.js';
 import { FileListRenderer } from './FileListRenderer.js';
+import { Localization } from './Localization.js';
 
 export class FileManager {
     constructor() {
-        this.contentLoader = new ContentLoader();
+        this.localization = new Localization();
+        this.contentLoader = null;
         this.fileListRenderer = null;
     }
 
     async init() {
-        await this.contentLoader.loadIndex();
+        // Load translations first
+        await this.localization.loadTranslations();
+        
+        // Initialize content loader with localization
+        this.contentLoader = new ContentLoader(this.localization);
+        
+        try {
+            await this.contentLoader.loadIndex();
+        } catch (error) {
+            this.showIndexError(error.message);
+            return;
+        }
         
         if (this.contentLoader.config?.title) {
             document.title = this.contentLoader.config.title;
@@ -23,7 +36,7 @@ export class FileManager {
             document.getElementsByTagName('head')[0].appendChild(link);
         }
         
-        this.fileListRenderer = new FileListRenderer(this.contentLoader);
+        this.fileListRenderer = new FileListRenderer(this.contentLoader, this.localization);
         
         const currentPath = this.getCurrentPath();
         
@@ -34,6 +47,63 @@ export class FileManager {
         }
         
         this.initUI();
+        this.createLanguageSwitcher();
+    }
+
+    showIndexError(errorMessage) {
+        const main = document.querySelector('main');
+        if (main) {
+            main.innerHTML = `
+                <div class="error-state">
+                    <div class="error-icon">❌</div>
+                    <h2>${this.localization.t('error_loading_index')}</h2>
+                    <div class="error-details">
+                        <p>${errorMessage}</p>
+                        <p>Please check that <code>/index.json</code> is valid JSON and has the correct structure.</p>
+                    </div>
+                    <div class="error-actions">
+                        <button onclick="location.reload()" class="error-btn">⟳ Retry</button>
+                        <a href="/" class="error-btn">🏠 Go Home</a>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    createLanguageSwitcher() {
+        const header = document.querySelector('header .wrapper');
+        if (!header) return;
+        
+        const switcher = document.createElement('div');
+        switcher.className = 'language-switcher';
+        
+        const currentLocale = this.localization.getCurrentLocale();
+        const locales = this.localization.getAvailableLocales();
+        
+        const flagMap = {
+            ru: '🇷🇺',
+            en: '🇬🇧'
+        };
+        
+        const nameMap = {
+            ru: 'Русский',
+            en: 'English'
+        };
+        
+        locales.forEach(locale => {
+            const option = document.createElement('button');
+            option.className = `lang-option ${locale === currentLocale ? 'active' : ''}`;
+            option.innerHTML = `${flagMap[locale]} ${nameMap[locale]}`;
+            option.onclick = async () => {
+                if (this.localization.setLocale(locale)) {
+                    // Reload the page to apply new locale
+                    window.location.reload();
+                }
+            };
+            switcher.appendChild(option);
+        });
+        
+        header.appendChild(switcher);
     }
 
     getCurrentPath() {
@@ -70,10 +140,9 @@ export class FileManager {
                 if (exists) {
                     html += `
                         <div class="latest-release-banner">
-                            <h2>🎉 Latest Release: ${versionName}</h2>
-                            <p>Download the latest firmware image for your device</p>
+                            <h2>🎉 ${this.localization.t('latest_release')}: ${versionName}</h2>
                             <a href="${downloadUrl}" class="download-btn" download>
-                                ⬇️ Download ${latestInfo.downloadFile}
+                                ⬇️ ${this.localization.t('download')} ${latestInfo.downloadFile}
                             </a>
                         </div>
                     `;
@@ -89,16 +158,21 @@ export class FileManager {
             if (exists) {
                 const changelogHtml = await this.contentLoader.loadMarkdown(changelogPath);
                 if (changelogHtml) {
-                    html += `<div class="changelog-preview"><h2>📝 What's New</h2>${changelogHtml}</div>`;
+                    html += `<div class="changelog-preview"><h2>📝 ${this.localization.t('whats_new')}</h2>${changelogHtml}</div>`;
                 }
             }
         }
         
         if (config?.mainPage?.quickLinks?.length) {
-            html += `<div class="quick-links"><h3>Quick Links</h3><div class="quick-links-grid">`;
+            html += `<div class="quick-links"><h3>${this.localization.t('quick_links')}</h3><div class="quick-links-grid">`;
             for (const link of config.mainPage.quickLinks) {
+                let label = link.label;
+                if (label.includes('Все релизы')) label = this.localization.t('all_releases');
+                if (label.includes('Ключ репозитория')) label = this.localization.t('repository_key');
+                if (label.includes('Документация')) label = this.localization.t('documentation');
+                
                 const target = link.download ? `download="${link.path}"` : '';
-                html += `<a href="${link.path}" ${target} class="quick-link">${link.label}</a>`;
+                html += `<a href="${link.path}" ${target} class="quick-link">${label}</a>`;
             }
             html += `</div></div>`;
         }
@@ -110,9 +184,9 @@ export class FileManager {
         
         // Update header
         const breadcrumbDiv = document.querySelector('.breadcrumbs');
-        if (breadcrumbDiv) breadcrumbDiv.innerHTML = 'Repository Home';
+        if (breadcrumbDiv) breadcrumbDiv.innerHTML = this.localization.t('repository_home');
         const h1 = document.querySelector('h1');
-        if (h1) h1.innerHTML = '<a href="/">Главная</a>';
+        if (h1) h1.innerHTML = `<a href="/">${this.localization.t('home')}</a>`;
     }
 
     async renderFolderPage(path) {
@@ -124,9 +198,9 @@ export class FileManager {
         if (!nodeInfo) {
             main.innerHTML = `
                 <div class="empty-state">
-                    <h2>404 - Path Not Found</h2>
-                    <p>The requested path "${path}" does not exist in the repository index.</p>
-                    <p><a href="/">← Back to Home</a></p>
+                    <h2>404 - ${this.localization.t('path_not_found')}</h2>
+                    <p>${path} ${this.localization.t('not_found_in_index')}</p>
+                    <p><a href="/">← ${this.localization.t('back_to_home')}</a></p>
                 </div>
             `;
             return;
@@ -139,9 +213,9 @@ export class FileManager {
             } else {
                 main.innerHTML = `
                     <div class="empty-state">
-                        <h2>404 - File Not Found</h2>
-                        <p>The file "${path}" is listed in index but does not exist on server.</p>
-                        <p><a href="/">← Back to Home</a></p>
+                        <h2>404 - ${this.localization.t('file_not_found')}</h2>
+                        <p>${path} ${this.localization.t('listed_but_not_exists')}</p>
+                        <p><a href="/">← ${this.localization.t('back_to_home')}</a></p>
                     </div>
                 `;
             }
@@ -152,9 +226,9 @@ export class FileManager {
         if (!children || Object.keys(children).length === 0) {
             main.innerHTML = `
                 <div class="empty-state">
-                    <h2>Empty Directory</h2>
-                    <p>This directory contains no files or folders.</p>
-                    <p><a href="/">← Back to Home</a></p>
+                    <h2>📁 ${this.localization.t('directory_empty')}</h2>
+                    <p>${this.localization.t('contains_no_files')}</p>
+                    <p><a href="/">← ${this.localization.t('back_to_home')}</a></p>
                 </div>
             `;
             return;
@@ -165,8 +239,8 @@ export class FileManager {
         let html = `
             <div class="meta">
                 <div id="summary">
-                    <span class="meta-item"><b id="dir-count">0</b> directories</span>
-                    <span class="meta-item"><b id="file-count">0</b> files</span>
+                    <span class="meta-item"><b id="dir-count">0</b> ${this.localization.t('directories')}</span>
+                    <span class="meta-item"><b id="file-count">0</b> ${this.localization.t('files')}</span>
                 </div>
                 <div class="view-controls">
                     <a href="javascript:void(0)" onclick="window.fileManager && window.fileManager.setLayout('list')" id="layout-list" class="layout current">
@@ -175,7 +249,7 @@ export class FileManager {
                             <path d="M4 4m0 2a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z"></path>
                             <path d="M4 14m0 2a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z"></path>
                         </svg>
-                        List
+                        ${this.localization.t('list_view')}
                     </a>
                     <a href="javascript:void(0)" onclick="window.fileManager && window.fileManager.setLayout('grid')" id="layout-grid" class="layout">
                         <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-layout-grid" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none">
@@ -185,7 +259,7 @@ export class FileManager {
                             <path d="M4 14m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"></path>
                             <path d="M14 14m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"></path>
                         </svg>
-                        Grid
+                        ${this.localization.t('grid_view')}
                     </a>
                 </div>
             </div>
@@ -207,7 +281,7 @@ export class FileManager {
                             <path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"/>
                             <path d="M21 21l-6 -6"/>
                         </svg>
-                        <input type="text" placeholder="Filter files..." id="filter" onkeyup="window.filterFiles()">
+                        <input type="text" placeholder="${this.localization.t('filter_placeholder')}" id="filter" onkeyup="window.filterFiles()">
                     </div>
                 </div>
                 <table id="file-listing">
@@ -215,14 +289,14 @@ export class FileManager {
                         <tr>
                             <th class="icon-column"></th>
                             <th class="name-column">
-                                <a href="javascript:void(0)" onclick="window.fileManager && window.fileManager.changeSort('name')" class="sort-name">Name</a>
+                                <a href="javascript:void(0)" onclick="window.fileManager && window.fileManager.changeSort('name')" class="sort-name">${this.localization.t('name')}</a>
                             </th>
                             <th class="size-column">
-                                <a href="javascript:void(0)" onclick="window.fileManager && window.fileManager.changeSort('size')" class="sort-size">Size</a>
+                                <a href="javascript:void(0)" onclick="window.fileManager && window.fileManager.changeSort('size')" class="sort-size">${this.localization.t('size')}</a>
                             </th>
                             <th class="checksum-column">SHA256</th>
                             <th class="timestamp-column hideable">
-                                <a href="javascript:void(0)" onclick="window.fileManager && window.fileManager.changeSort('date')" class="sort-date">Modified</a>
+                                <a href="javascript:void(0)" onclick="window.fileManager && window.fileManager.changeSort('date')" class="sort-date">${this.localization.t('modified')}</a>
                             </th>
                         </tr>
                     </thead>
@@ -257,15 +331,15 @@ export class FileManager {
         const breadcrumbs = UIHelper.buildBreadcrumbs(path);
         const breadcrumbDiv = document.querySelector('.breadcrumbs');
         if (breadcrumbDiv) {
-            breadcrumbDiv.innerHTML = `Navigation: ${breadcrumbs.map((bc, i) => 
-                `<a href="${bc.path}">${bc.name}</a>${i < breadcrumbs.length - 1 ? ' / ' : ''}`
+            breadcrumbDiv.innerHTML = `${this.localization.t('navigation')}: ${breadcrumbs.map((bc, i) => 
+                `<a href="${bc.path}">${bc.name === 'Главная' ? this.localization.t('home') : bc.name}</a>${i < breadcrumbs.length - 1 ? ' / ' : ''}`
             ).join('')}`;
         }
         
         const h1 = document.querySelector('h1');
         if (h1) {
             h1.innerHTML = breadcrumbs.map((bc, i) => 
-                `<a href="${bc.path}">${bc.name}</a>${i < breadcrumbs.length - 1 ? ' / ' : ''}`
+                `<a href="${bc.path}">${bc.name === 'Главная' ? this.localization.t('home') : bc.name}</a>${i < breadcrumbs.length - 1 ? ' / ' : ''}`
             ).join('');
         }
     }

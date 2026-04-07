@@ -16,11 +16,12 @@ def scan_dir(path, base_path, depth=0):
     
     for item in sorted(Path(path).iterdir()):
         if item.name.startswith('.'): continue
-        if item.name in ['index.json', '404.html', 'generate_index.py', 
-                         'header.md', 'footer.md', 'changelog.md',
-                         '.notice.md', '.success.md','.warning.md',
-                         '.error.md', '.info.md'
-                         ]: continue
+        if item.name in [
+            'index.json', '404.html', 'generate_index.py', 
+            'header.md', 'footer.md', 'changelog.md',
+            '.notice.md', '.success.md','.warning.md',
+            '.error.md', '.info.md'
+        ]: continue
         
         name = item.name
         stat = item.stat()

@@ -1,0 +1,124 @@
+export class Localization {
+    constructor() {
+        this.currentLocale = 'ru';
+        this.translations = {};
+        this.availableLocales = ['ru', 'en'];
+    }
+
+    async loadTranslations() {
+        try {
+            const response = await fetch('/i18n.json');
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            this.translations = await response.json();
+            
+            // Detect user's preferred language
+            const savedLocale = localStorage.getItem('locale');
+            if (savedLocale && this.availableLocales.includes(savedLocale)) {
+                this.currentLocale = savedLocale;
+            } else {
+                const browserLang = navigator.language.split('-')[0];
+                if (this.availableLocales.includes(browserLang)) {
+                    this.currentLocale = browserLang;
+                }
+            }
+            
+            return this.translations;
+        } catch (error) {
+            console.error('Failed to load translations:', error);
+            // Fallback translations
+            this.translations = {
+                ru: {
+                    navigation: "Навигация",
+                    home: "Главная",
+                    repository_home: "Домашняя страница репозитория",
+                    directories: "папок",
+                    files: "файлов",
+                    name: "Имя",
+                    size: "Размер",
+                    modified: "Изменён",
+                    filter_placeholder: "Фильтр файлов...",
+                    list_view: "Список",
+                    grid_view: "Сетка",
+                    download: "Скачать",
+                    latest_release: "Последний релиз",
+                    whats_new: "Что нового",
+                    quick_links: "Быстрые ссылки",
+                    all_releases: "Все релизы",
+                    repository_key: "Ключ репозитория",
+                    documentation: "Документация",
+                    path_not_found: "Путь не найден",
+                    file_not_found: "Файл не найден",
+                    directory_empty: "Пустая директория",
+                    back_to_home: "Назад на главную",
+                    not_found_in_index: "не существует в индексе репозитория",
+                    listed_but_not_exists: "указан в индексе, но не существует на сервере",
+                    contains_no_files: "Эта директория не содержит файлов или папок",
+                    error_loading_index: "Ошибка загрузки index.json",
+                    loading_index: "Загрузка индекса репозитория...",
+                    index_loaded: "Индекс загружен успешно"
+                },
+                en: {
+                    navigation: "Navigation",
+                    home: "Home",
+                    repository_home: "Repository Home",
+                    directories: "directories",
+                    files: "files",
+                    name: "Name",
+                    size: "Size",
+                    modified: "Modified",
+                    filter_placeholder: "Filter files...",
+                    list_view: "List",
+                    grid_view: "Grid",
+                    download: "Download",
+                    latest_release: "Latest Release",
+                    whats_new: "What's New",
+                    quick_links: "Quick Links",
+                    all_releases: "All Releases",
+                    repository_key: "Repository Key",
+                    documentation: "Documentation",
+                    path_not_found: "Path Not Found",
+                    file_not_found: "File Not Found",
+                    directory_empty: "Empty Directory",
+                    back_to_home: "Back to Home",
+                    not_found_in_index: "does not exist in the repository index",
+                    listed_but_not_exists: "is listed in index but does not exist on server",
+                    contains_no_files: "This directory contains no files or folders",
+                    error_loading_index: "Error loading index.json",
+                    loading_index: "Loading repository index...",
+                    index_loaded: "Index loaded successfully"
+                }
+            };
+            return this.translations;
+        }
+    }
+
+    t(key, params = {}) {
+        const translation = this.translations[this.currentLocale]?.[key] || 
+                           this.translations['en']?.[key] || 
+                           key;
+        
+        // Replace parameters like {name}
+        return translation.replace(/\{(\w+)\}/g, (match, paramName) => {
+            return params[paramName] !== undefined ? params[paramName] : match;
+        });
+    }
+
+    setLocale(locale) {
+        if (this.availableLocales.includes(locale)) {
+            this.currentLocale = locale;
+            localStorage.setItem('locale', locale);
+            return true;
+        }
+        return false;
+    }
+
+    getCurrentLocale() {
+        return this.currentLocale;
+    }
+
+    getAvailableLocales() {
+        return this.availableLocales;
+    }
+}

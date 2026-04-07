@@ -1,8 +1,9 @@
 import { UIHelper } from './UIHelper.js';
 
 export class FileListRenderer {
-    constructor(contentLoader) {
+    constructor(contentLoader, localization) {
         this.contentLoader = contentLoader;
+        this.localization = localization;
         this.currentSort = 'name';
         this.currentOrder = 'asc';
     }

@@ -1,9 +1,11 @@
 import { UIHelper } from './UIHelper.js';
 
 export class ContentLoader {
-    constructor() {
+    constructor(localization) {
+        this.localization = localization;
         this.indexData = null;
         this.config = null;
+        this.loadError = null;
     }
 
     async fileExists(url) {
@@ -16,25 +18,43 @@ export class ContentLoader {
     }
 
     async loadIndex() {
-        UIHelper.showProgress('Loading repository index...');
+        UIHelper.showProgress(this.localization.t('loading_index'));
         
         try {
             const response = await fetch('/index.json');
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
             
-            this.indexData = await response.json();
+            const text = await response.text();
+            
+            // Try to parse JSON with error handling
+            try {
+                this.indexData = JSON.parse(text);
+            } catch (parseError) {
+                throw new Error(`JSON Parse Error: ${parseError.message}\nCheck that index.json is valid JSON`);
+            }
+            
+            // Validate structure
+            if (!this.indexData.cfg) {
+                throw new Error('Invalid index.json: missing "cfg" section');
+            }
+            
+            if (!this.indexData.files) {
+                throw new Error('Invalid index.json: missing "files" section');
+            }
+            
             this.config = this.indexData.cfg;
             
-            UIHelper.updateProgressMessage('Index loaded successfully');
+            UIHelper.updateProgressMessage(this.localization.t('index_loaded'));
             setTimeout(UIHelper.hideProgress, 500);
             
             return this.indexData;
         } catch (error) {
             console.error('Failed to load index.json:', error);
-            UIHelper.updateProgressMessage('Error loading index.json');
-            setTimeout(UIHelper.hideProgress, 2000);
+            this.loadError = error.message;
+            UIHelper.updateProgressMessage(`${this.localization.t('error_loading_index')}: ${error.message}`);
+            setTimeout(UIHelper.hideProgress, 3000);
             throw error;
         }
     }
@@ -145,6 +165,7 @@ export class ContentLoader {
             messages: []
         };
         
+        // Fix: ensure proper path construction with slash
         const cleanPath = folderPath.replace(/^\/+|\/+$/g, '');
         const basePath = cleanPath ? `/${cleanPath}` : '';
         
@@ -191,5 +212,9 @@ export class ContentLoader {
         }
         
         return content;
+    }
+
+    getLoadError() {
+        return this.loadError;
     }
 }

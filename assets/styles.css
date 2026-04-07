@@ -1464,3 +1464,128 @@ td a:visited:hover {
         font-size: 14px;
     }
 }
+
+
+
+/* Language Switcher */
+.language-switcher {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    display: flex;
+    gap: 8px;
+    z-index: 100;
+}
+
+.lang-option {
+    padding: 5px 12px;
+    border: 1px solid #dee2e6;
+    background: white;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.lang-option:hover {
+    background: #f0f0f0;
+}
+
+.lang-option.active {
+    background: #006ed3;
+    color: white;
+    border-color: #006ed3;
+}
+
+@media (prefers-color-scheme: dark) {
+    .lang-option {
+        background: #1a2530;
+        border-color: #2c3e4e;
+        color: #ccc;
+    }
+    
+    .lang-option:hover {
+        background: #253544;
+    }
+    
+    .lang-option.active {
+        background: #006ed3;
+        color: white;
+    }
+}
+
+/* Error State */
+.error-state {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.error-icon {
+    font-size: 64px;
+    margin-bottom: 20px;
+}
+
+.error-state h2 {
+    color: #dc3545;
+    margin-bottom: 20px;
+}
+
+.error-details {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px auto;
+    max-width: 600px;
+    text-align: left;
+}
+
+.error-details code {
+    background: #e9ecef;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+}
+
+.error-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 30px;
+}
+
+.error-btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background: #006ed3;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.error-btn:hover {
+    background: #0056b3;
+}
+
+@media (prefers-color-scheme: dark) {
+    .error-details {
+        background: #0f151c;
+        border-color: #2c3e4e;
+    }
+    
+    .error-details code {
+        background: #1a2530;
+        color: #e0e0e0;
+    }
+}
+
+/* Header wrapper relative positioning */
+header .wrapper {
+    position: relative;
+}
