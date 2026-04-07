@@ -1,5 +1,3 @@
-import { loadingManager } from './LoadingManager.js';
-
 export class LoadingManager {
     constructor() {
         this.loadingTasks = new Map();

@@ -211,7 +211,11 @@ class App {
                 listing.classList.remove('list-view');
                 
                 const table = listing.querySelector('table');
+                if (!table) return;
+                
                 const tbody = table.querySelector('tbody');
+                if (!tbody) return;
+                
                 const rows = tbody.querySelectorAll('tr:not(.parent-dir)');
                 
                 const gridContainer = document.createElement('div');

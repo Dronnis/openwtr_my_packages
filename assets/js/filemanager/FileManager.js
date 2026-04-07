@@ -155,13 +155,23 @@ export class FileManager {
         if (dirCountEl) dirCountEl.textContent = dirCount;
         if (fileCountEl) fileCountEl.textContent = fileCount;
         
-        // Формируем h1 из хлебных крошек (без breadcrumbs)
+        // Формируем h1 из хлебных крошек
         const breadcrumbs = UIHelper.buildBreadcrumbs(path, (key) => this.localization.t(key));
         const h1 = document.querySelector('h1');
         if (h1) {
             h1.innerHTML = breadcrumbs.map((bc, i) => 
                 `<a href="${bc.path}">${bc.name}</a>${i < breadcrumbs.length - 1 ? ' / ' : ''}`
             ).join('');
+        }
+        
+        // Применяем сохранённый вид после рендера таблицы
+        const savedLayout = localStorage.getItem('filemanager-layout');
+        if (savedLayout && savedLayout !== 'list') {
+            setTimeout(() => {
+                if (window.switchLayout) {
+                    window.switchLayout(savedLayout);
+                }
+            }, 50);
         }
     }
 
