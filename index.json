@@ -1,0 +1,65 @@
+{
+  "cfg": {
+    "title": "Extra Packages for OpenWrt",
+    "favicon": "https://opkg.oldlan.ru/favicon.ico",
+    "rootUrl": "https://opkg.oldlan.ru/",
+    "defaultSort": "namedirfirst",
+    "defaultOrder": "desc"
+  },
+  "files": {
+    "releases": {
+      "__INFO__": {
+        "icon": "folder",
+        "type": "dir",
+        "size": 0,
+        "date": 1730362963
+      },
+      "25.12.2": {
+        "__INFO__": {
+          "icon": "folder",
+          "type": "dir", 
+          "size": 0,
+          "date": 1735689600
+        },
+        "targets": {
+          "__INFO__": {
+            "icon": "folder",
+            "type": "dir",
+            "size": 0,
+            "date": 1735689600
+          },
+          "x86": {
+            "__INFO__": { "icon": "folder", "type": "dir", "size": 0, "date": 1735689600 },
+            "64": {
+              "__INFO__": { "icon": "folder", "type": "dir", "size": 0, "date": 1735689600 },
+              "packages": {
+                "__INFO__": { "icon": "folder", "type": "dir", "size": 0, "date": 1735689600 },
+                "atm-debug-tools-2.5.2-r8.apk": {
+                  "type": "file",
+                  "sha256sum": "a1b2c3d4e5f6...",
+                  "size": 15420,
+                  "icon": "package",
+                  "date": 1735689600
+                }
+              },
+              "openwrt-25.12.2-x86-64-generic-ext4-rootfs.img.gz": {
+                "type": "file",
+                "sha256sum": "f6e5d4c3b2a1...",
+                "size": 52428800,
+                "icon": "image",
+                "date": 1735689600
+              }
+            }
+          }
+        }
+      }
+    },
+    "key-build.pub": {
+      "type": "file",
+      "sha256sum": "abc123...",
+      "size": 103,
+      "icon": "key",
+      "date": 1663851439
+    }
+  }
+}
