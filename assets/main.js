@@ -66,10 +66,8 @@ class App {
         
         if (this.config?.mainPage?.quickLinks) {
             for (const link of this.config.mainPage.quickLinks) {
-                const isExternal = link.path.startsWith('http://') || link.path.startsWith('https://');
-                const target = isExternal ? 'target="_blank" rel="noopener noreferrer"' : '';
-                const download = link.download ? `download="${link.path}"` : '';
-                quickLinks.innerHTML += `<a href="${link.path}" ${target} ${download} class="quick-link-item">${link.label}</a>`;
+                const target = link.download ? `download="${link.path}"` : '';
+                quickLinks.innerHTML += `<a href="${link.path}" ${target} class="quick-link-item">${link.label}</a>`;
             }
         }
         
@@ -95,21 +93,22 @@ class App {
         
         if (this.config?.footer?.links) {
             for (const link of this.config.footer.links) {
-                const isExternal = link.url.startsWith('http://') || link.url.startsWith('https://');
-                const target = isExternal ? 'target="_blank" rel="noopener noreferrer"' : '';
-                footerLinks.innerHTML += `<a href="${link.url}" ${target}>${link.label}</a>`;
+                footerLinks.innerHTML += `<a href="${link.url}" target="_blank" rel="noopener noreferrer">${link.label}</a>`;
+                footerLinks.innerHTML += '<span class="separator">|</span>';
             }
         } else {
             footerLinks.innerHTML = `
-                <a href="https://github.com/Dronnis/kwrt" target="_blank">GitHub</a>
-                <a href="https://github.com/Dronnis/kwrt/issues" target="_blank">Issues</a>
-                <a href="https://github.com/Dronnis/kwrt/wiki" target="_blank">Documentation</a>
+                <a href="https://github.com" target="_blank">GitHub</a>
+                <span class="separator">|</span>
+                <a href="#" target="_blank">Documentation</a>
+                <span class="separator">|</span>
+                <a href="#" target="_blank">Support</a>
             `;
         }
         
         const copyright = document.createElement('div');
         copyright.className = 'copyright';
-        copyright.innerHTML = `<span id="year"></span> D-WRT Project • <a href="https://github.com/Dronnis/kwrt" target="_blank">github.com/Dronnis/kwrt</a>`;
+        copyright.innerHTML = `<span id="year"></span> D-WRT Project`;
         
         footer.innerHTML = '';
         footer.appendChild(footerLinks);
@@ -160,7 +159,7 @@ class App {
 
     setupFileManagerEvents() {
         const breadcrumbDiv = document.querySelector('.breadcrumbs');
-        if (breadcrumbDiv) breadcrumbDiv.style.display = 'block';
+        if (breadcrumbDiv) breadcrumbDiv.style.display = 'none';
         
         const meta = document.querySelector('.meta');
         if (meta) meta.style.display = 'flex';

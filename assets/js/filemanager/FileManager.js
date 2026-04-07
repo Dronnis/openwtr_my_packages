@@ -62,7 +62,6 @@ export class FileManager {
         
         const folderContent = await this.contentLoader.loadFolderContent(path);
         
-        // Начинаем собирать HTML
         let html = `
             <div class="meta">
                 <div id="summary">
@@ -92,21 +91,16 @@ export class FileManager {
             </div>
         `;
         
-        // 1. Сначала header (если есть)
         if (folderContent.header) html += folderContent.header;
         
-        // 2. Затем сообщения (notice, info, success, warning, error)
         for (const msg of folderContent.messages) {
             html += UIHelper.renderMessage(msg.content, msg.type);
         }
         
-        // 3. Затем changelog (если есть)
         if (folderContent.changelog) html += `<div class="changelog-preview">${folderContent.changelog}</div>`;
         
-        // 4. Затем readme (если есть) - перед списком файлов
         if (folderContent.readme) html += `<div class="readme">${folderContent.readme}</div>`;
         
-        // 5. Затем список файлов
         html += `
             <div class="listing">
                 <div class="filter-bar">
@@ -140,7 +134,6 @@ export class FileManager {
             </div>
         `;
         
-        // 6. Затем footer (после списка файлов)
         if (folderContent.footer) html += folderContent.footer;
         
         main.innerHTML = html;
@@ -162,14 +155,8 @@ export class FileManager {
         if (dirCountEl) dirCountEl.textContent = dirCount;
         if (fileCountEl) fileCountEl.textContent = fileCount;
         
+        // Формируем h1 из хлебных крошек (без breadcrumbs)
         const breadcrumbs = UIHelper.buildBreadcrumbs(path, (key) => this.localization.t(key));
-        const breadcrumbDiv = document.querySelector('.breadcrumbs');
-        if (breadcrumbDiv) {
-            breadcrumbDiv.innerHTML = `${this.localization.t('navigation')}: ${breadcrumbs.map((bc, i) => 
-                `<a href="${bc.path}">${bc.name}</a>${i < breadcrumbs.length - 1 ? ' / ' : ''}`
-            ).join('')}`;
-        }
-        
         const h1 = document.querySelector('h1');
         if (h1) {
             h1.innerHTML = breadcrumbs.map((bc, i) => 
