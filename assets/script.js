@@ -130,7 +130,7 @@ function getChildren(path) {
     return children;
 }
 
-// Load folder-specific MD files
+// Load folder-specific MD files from current level only
 async function loadFolderContent(folderPath) {
     const content = {
         header: null,
@@ -140,8 +140,9 @@ async function loadFolderContent(folderPath) {
         messages: []
     };
     
-    // Base path without trailing slash
-    const basePath = folderPath === '/' ? '' : folderPath;
+    // Clean path - remove leading/trailing slashes
+    const cleanPath = folderPath.replace(/^\/+|\/+$/g, '');
+    const basePath = cleanPath ? `/${cleanPath}` : '';
     
     // Define possible message files and their types
     const messageFiles = [
@@ -152,14 +153,14 @@ async function loadFolderContent(folderPath) {
         { file: '.error.md', type: 'error' }
     ];
     
-    // Load message files
+    // Load message files from current level only
     for (const msg of messageFiles) {
         const msgPath = `${basePath}${msg.file}`;
         const exists = await fileExists(msgPath);
         if (exists) {
             const response = await fetch(msgPath);
             const text = await response.text();
-            if (text.trim()) {
+            if (text && text.trim()) {
                 content.messages.push({
                     type: msg.type,
                     content: await renderMarkdownFromText(text)
@@ -168,31 +169,48 @@ async function loadFolderContent(folderPath) {
         }
     }
     
-    // Load header
+    // Load header from current level only
     const headerPath = `${basePath}/header.md`;
     if (await fileExists(headerPath)) {
         content.header = await renderMarkdown(headerPath);
     }
     
-    // Load footer
+    // Load footer from current level only
     const footerPath = `${basePath}/footer.md`;
     if (await fileExists(footerPath)) {
         content.footer = await renderMarkdown(footerPath);
     }
     
-    // Load changelog
+    // Load changelog from current level only
     const changelogPath = `${basePath}/changelog.md`;
     if (await fileExists(changelogPath)) {
         content.changelog = await renderMarkdown(changelogPath);
     }
     
-    // Load readme
+    // Load readme from current level only
     const readmePath = `${basePath}/readme.md`;
     if (await fileExists(readmePath)) {
         content.readme = await renderMarkdown(readmePath);
     }
     
     return content;
+}
+
+// Check if a directory exists (has any children that exist on server)
+async function directoryHasContent(path, children) {
+    if (!children) return false;
+    
+    for (const [name, data] of Object.entries(children)) {
+        if (name === '__INFO__') continue;
+        
+        const isDir = data.type === 'dir' || data.__INFO__?.type === 'dir';
+        const itemPath = path === '/' ? `/${name}` : `${path}/${name}`;
+        
+        if (await fileExists(itemPath)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 // Sort items
@@ -403,7 +421,7 @@ function renderMessage(message, type) {
     `;
 }
 
-// Render file listing with sorting
+// Render file listing with existence check at current level only
 async function renderListing(items, currentPath) {
     const tbody = document.querySelector('#file-listing tbody');
     if (!tbody) return;
@@ -413,7 +431,7 @@ async function renderListing(items, currentPath) {
     
     tbody.innerHTML = '';
     
-    // Separate directories and files (already sorted)
+    // Separate directories and files
     const dirs = {};
     const files = {};
     
@@ -451,45 +469,68 @@ async function renderListing(items, currentPath) {
         tbody.appendChild(row);
     }
     
-    // Add directories
+    // Add directories - check if they exist at current level
     for (const [name, data] of Object.entries(dirs)) {
         const info = data.__INFO__ || data;
         const newPath = currentPath === '/' ? `/${name}` : `${currentPath}/${name}`;
         const size = info.size || 0;
         
-        const row = document.createElement('tr');
-        row.className = 'file dir';
-        row.innerHTML = `
-            <td class="icon-cell">
-                ${getIcon('dir', info.icon)}
-            </td>
-            <td class="name-cell">
-                <a href="${newPath}">
-                    <span class="name">${name}/</span>
-                </a>
-            </td>
-            <td class="size-cell" data-size="${size}">
-                <div class="sizebar">
-                    <div class="sizebar-bar"></div>
-                    <div class="sizebar-text">${formatSize(size)}</div>
-                </div>
-            </td>
-            <td class="checksum-cell">—</td>
-            <td class="timestamp-cell hideable">
-                <time datetime="${new Date((info.date || 0) * 1000).toISOString()}">${formatDate(info.date)}</time>
-            </td>
-        `;
-        tbody.appendChild(row);
+        // Check if directory exists at current level
+        const dirExists = await fileExists(newPath);
+        
+        if (!dirExists) {
+            // Directory doesn't exist - show as missing
+            const row = document.createElement('tr');
+            row.className = 'file missing';
+            row.innerHTML = `
+                <td class="icon-cell">
+                    ${getIcon('dir', info.icon)}
+                </td>
+                <td class="name-cell">
+                    <span class="name missing-file">${name}/</span>
+                    <span class="missing-badge">(404 - Not Found)</span>
+                </td>
+                <td class="size-cell">—</td>
+                <td class="checksum-cell">—</td>
+                <td class="timestamp-cell hideable">—</td>
+            `;
+            tbody.appendChild(row);
+        } else {
+            // Directory exists
+            const row = document.createElement('tr');
+            row.className = 'file dir';
+            row.innerHTML = `
+                <td class="icon-cell">
+                    ${getIcon('dir', info.icon)}
+                </td>
+                <td class="name-cell">
+                    <a href="${newPath}">
+                        <span class="name">${name}/</span>
+                    </a>
+                </td>
+                <td class="size-cell" data-size="${size}">
+                    <div class="sizebar">
+                        <div class="sizebar-bar"></div>
+                        <div class="sizebar-text">${formatSize(size)}</div>
+                    </div>
+                </td>
+                <td class="checksum-cell">—</td>
+                <td class="timestamp-cell hideable">
+                    <time datetime="${new Date((info.date || 0) * 1000).toISOString()}">${formatDate(info.date)}</time>
+                </td>
+            `;
+            tbody.appendChild(row);
+        }
     }
     
-    // Add files and verify they exist on server
+    // Add files - check if they exist at current level
     for (const [name, data] of Object.entries(files)) {
         const info = data.__INFO__ || data;
         const filePath = currentPath === '/' ? `/${name}` : `${currentPath}/${name}`;
         const size = info.size || 0;
         const sha256 = info.sha256sum || '';
         
-        // Check if file exists on server
+        // Check if file exists at current level
         const exists = await fileExists(filePath);
         
         if (!exists) {
@@ -544,6 +585,7 @@ async function renderListing(items, currentPath) {
     // Update sort indicators
     updateSortIndicators();
 }
+
 
 function updateSizeBars() {
     let largest = 0;
@@ -618,7 +660,7 @@ async function renderMainPage() {
         <div class="main-content">
     `;
     
-    // Load main page content from root MD files
+    // Load main page content from root only (current level)
     const rootContent = await loadFolderContent('');
     
     // Display messages from root
@@ -626,6 +668,7 @@ async function renderMainPage() {
         html += renderMessage(msg.content, msg.type);
     }
     
+    // Check latest release and download file at current level
     if (config?.mainPage?.latestRelease) {
         const latestPath = config.mainPage.latestRelease;
         const latestNode = getNodeInfo(latestPath);
@@ -635,6 +678,7 @@ async function renderMainPage() {
             const downloadUrl = `${latestPath}/${latestInfo.downloadFile}`;
             const versionName = latestPath.split('/').pop();
             
+            // Check if file exists at the specific path
             const exists = await fileExists(downloadUrl);
             
             if (exists) {
@@ -656,18 +700,24 @@ async function renderMainPage() {
         html += rootContent.header;
     }
     
+    // Check if changelog exists at root level
     if (config?.mainPage?.showChangelog && config?.mainPage?.changelogFile) {
-        const changelogHtml = await renderMarkdown(config.mainPage.changelogFile);
-        if (changelogHtml) {
-            html += `
-                <div class="changelog-preview">
-                    <h2>📝 What's New</h2>
-                    ${changelogHtml}
-                </div>
-            `;
+        const changelogPath = config.mainPage.changelogFile;
+        const exists = await fileExists(changelogPath);
+        if (exists) {
+            const changelogHtml = await renderMarkdown(changelogPath);
+            if (changelogHtml) {
+                html += `
+                    <div class="changelog-preview">
+                        <h2>📝 What's New</h2>
+                        ${changelogHtml}
+                    </div>
+                `;
+            }
         }
     }
     
+    // Add quick links
     if (config?.mainPage?.quickLinks?.length) {
         html += `<div class="quick-links">
             <h3>Quick Links</h3>
@@ -706,6 +756,7 @@ async function renderFolderPage(path) {
     }
     
     if (nodeInfo.type === 'file' || (nodeInfo.type !== 'dir' && !nodeInfo.__INFO__)) {
+        // Check if file exists at the exact path
         const exists = await fileExists(path);
         if (exists) {
             window.location.href = path;
@@ -733,7 +784,7 @@ async function renderFolderPage(path) {
         return;
     }
     
-    // Load folder-specific content from MD files
+    // Load folder-specific content from current level only
     const folderContent = await loadFolderContent(path);
     
     let html = `
@@ -765,17 +816,17 @@ async function renderFolderPage(path) {
         </div>
     `;
     
-    // Display all messages from MD files
+    // Display messages from current level only
     for (const msg of folderContent.messages) {
         html += renderMessage(msg.content, msg.type);
     }
     
-    // Add header
+    // Add header from current level only
     if (folderContent.header) {
         html += folderContent.header;
     }
     
-    // Add changelog
+    // Add changelog from current level only
     if (folderContent.changelog) {
         html += `<div class="changelog-preview">${folderContent.changelog}</div>`;
     }
@@ -813,12 +864,12 @@ async function renderFolderPage(path) {
         </div>
     `;
     
-    // Add readme
+    // Add readme from current level only
     if (folderContent.readme) {
         html += `<div class="readme">${folderContent.readme}</div>`;
     }
     
-    // Add footer
+    // Add footer from current level only
     if (folderContent.footer) {
         html += folderContent.footer;
     }
@@ -1038,6 +1089,23 @@ function setLayout(layout, save = true) {
         localStorage.setItem('filemanager-layout', layout);
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // Make functions global
 window.filterFiles = filterFiles;
