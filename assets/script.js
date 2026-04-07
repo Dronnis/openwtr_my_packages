@@ -320,7 +320,7 @@ function buildBreadcrumbs(path) {
 }
 
 // Render file listing with sorting
-function renderListing(items, currentPath) {
+async function renderListing(items, currentPath) {
     const tbody = document.querySelector('#file-listing tbody');
     if (!tbody) return;
     
