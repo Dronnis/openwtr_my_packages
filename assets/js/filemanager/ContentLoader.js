@@ -233,7 +233,7 @@ export class ContentLoader {
             const basePath = normalizedPath === '/' ? '' : normalizedPath;
             
             if (pathConfig.header) {
-                const headerPath = `${basePath}${pathConfig.header}`;
+                const headerPath = `${basePath}/${pathConfig.header}`;
                 const exists = await this.fileExists(headerPath, `check_header_${normalizedPath}`);
                 if (exists) {
                     content.header = await this.loadMarkdown(headerPath, 'header');
@@ -241,7 +241,7 @@ export class ContentLoader {
             }
             
             if (pathConfig.footer) {
-                const footerPath = `${basePath}${pathConfig.footer}`;
+                const footerPath = `${basePath}/${pathConfig.footer}`;
                 const exists = await this.fileExists(footerPath, `check_footer_${normalizedPath}`);
                 if (exists) {
                     content.footer = await this.loadMarkdown(footerPath, 'footer');
@@ -249,7 +249,7 @@ export class ContentLoader {
             }
             
             if (pathConfig.changelog) {
-                const changelogPath = `${basePath}${pathConfig.changelog}`;
+                const changelogPath = `${basePath}/${pathConfig.changelog}`;
                 const exists = await this.fileExists(changelogPath, `check_changelog_${normalizedPath}`);
                 if (exists) {
                     content.changelog = await this.loadMarkdown(changelogPath, 'changelog');
@@ -257,7 +257,7 @@ export class ContentLoader {
             }
             
             if (pathConfig.readme) {
-                const readmePath = `${basePath}${pathConfig.readme}`;
+                const readmePath = `${basePath}/${pathConfig.readme}`;
                 const exists = await this.fileExists(readmePath, `check_readme_${normalizedPath}`);
                 if (exists) {
                     content.readme = await this.loadMarkdown(readmePath, 'readme');
@@ -268,7 +268,7 @@ export class ContentLoader {
                 const messageTypes = ['notice', 'info', 'success', 'warning', 'error'];
                 for (const msgType of messageTypes) {
                     if (pathConfig.messages[msgType]) {
-                        const msgPath = `${basePath}${pathConfig.messages[msgType]}`;
+                        const msgPath = `${basePath}/${pathConfig.messages[msgType]}`;
                         const exists = await this.fileExists(msgPath, `check_msg_${msgPath}`);
                         if (exists) {
                             const taskId = `load_${msgType}_${normalizedPath}`;
