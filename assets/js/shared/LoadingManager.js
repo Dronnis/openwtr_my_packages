@@ -1,3 +1,5 @@
+import { loadingManager } from './LoadingManager.js';
+
 export class LoadingManager {
     constructor() {
         this.loadingTasks = new Map();
@@ -6,6 +8,11 @@ export class LoadingManager {
         this.failedTasks = 0;
         this.currentTask = null;
         this.isActive = false;
+        this.localization = null;
+    }
+
+    setLocalization(localization) {
+        this.localization = localization;
     }
 
     startTask(id, type = 'unknown') {
@@ -45,44 +52,50 @@ export class LoadingManager {
         }
     }
 
-    updateUI() {
+    getTypeName(type) {
         const typeNames = {
-            'index': 'Loading index',
-            'info': 'Loading metadata',
-            'markdown': 'Loading documentation',
-            'file': 'Checking files',
-            'message': 'Loading messages',
-            'header': 'Loading header',
-            'footer': 'Loading footer',
-            'changelog': 'Loading changelog',
-            'readme': 'Loading readme'
+            'index': 'loading_index',
+            'info': 'loading_metadata',
+            'markdown': 'loading_documentation',
+            'file': 'checking_files',
+            'message': 'loading_messages',
+            'header': 'loading_header',
+            'footer': 'loading_footer',
+            'changelog': 'loading_changelog',
+            'readme': 'loading_readme'
         };
         
-        const isRu = localStorage.getItem('locale') === 'ru';
+        const key = typeNames[type] || 'loading';
+        
+        if (this.localization) {
+            return this.localization.t(key);
+        }
+        
+        // Fallback на английский
+        const fallback = {
+            'index': 'Loading index...',
+            'info': 'Loading metadata...',
+            'markdown': 'Loading documentation...',
+            'file': 'Checking files...',
+            'message': 'Loading messages...',
+            'header': 'Loading header...',
+            'footer': 'Loading footer...',
+            'changelog': 'Loading changelog...',
+            'readme': 'Loading readme...'
+        };
+        
+        return fallback[type] || 'Loading...';
+    }
+
+    updateUI() {
         let statusText = '';
         
         if (this.currentTask) {
-            const typeName = typeNames[this.currentTask.type] || this.currentTask.type;
-            statusText = isRu ? this.getRussianName(this.currentTask.type) : typeName;
+            statusText = this.getTypeName(this.currentTask.type);
         }
         
         const completed = this.completedTasks + this.failedTasks;
         this.updateUIElements(statusText, completed, this.totalTasks);
-    }
-
-    getRussianName(type) {
-        const names = {
-            'index': 'Загрузка индекса',
-            'info': 'Загрузка метаданных',
-            'markdown': 'Загрузка документации',
-            'file': 'Проверка файлов',
-            'message': 'Загрузка уведомлений',
-            'header': 'Загрузка заголовка',
-            'footer': 'Загрузка подвала',
-            'changelog': 'Загрузка changelog',
-            'readme': 'Загрузка readme'
-        };
-        return names[type] || type;
     }
 
     updateUIElements(statusText, completed, total) {

@@ -18,6 +18,9 @@ class App {
     async init() {
         await this.localization.loadTranslations();
         
+        // Передаём локализацию в LoadingManager
+        loadingManager.setLocalization(this.localization);
+        
         this.contentLoader = new ContentLoader(this.localization);
         
         try {
@@ -100,15 +103,15 @@ class App {
             footerLinks.innerHTML = `
                 <a href="https://github.com" target="_blank">GitHub</a>
                 <span class="separator">|</span>
-                <a href="#" target="_blank">Documentation</a>
+                <a href="#" target="_blank">${this.localization.t('documentation')}</a>
                 <span class="separator">|</span>
-                <a href="#" target="_blank">Support</a>
+                <a href="#" target="_blank">${this.localization.t('support')}</a>
             `;
         }
         
         const copyright = document.createElement('div');
         copyright.className = 'copyright';
-        copyright.innerHTML = `<span id="year"></span> D-WRT Project`;
+        copyright.innerHTML = `<span id="year"></span> ${this.localization.t('copyright')}`;
         
         footer.innerHTML = '';
         footer.appendChild(footerLinks);
@@ -126,12 +129,13 @@ class App {
         switcher.className = 'language-switcher';
         
         const flagMap = { ru: '🇷🇺', en: '🇬🇧' };
-        const nameMap = { ru: 'RU', en: 'EN' };
+        const nameMap = { ru: this.localization.t('russian'), en: this.localization.t('english') };
         
         for (const locale of this.localization.getAvailableLocales()) {
             const option = document.createElement('button');
             option.className = `lang-option ${locale === this.localization.getCurrentLocale() ? 'active' : ''}`;
             option.innerHTML = `${flagMap[locale]} ${nameMap[locale]}`;
+            option.title = this.localization.t('select_language');
             option.onclick = async () => {
                 if (this.localization.setLocale(locale)) {
                     window.location.reload();
@@ -150,6 +154,7 @@ class App {
         const h1 = document.querySelector('h1');
         if (h1) {
             h1.innerHTML = '<a href="/">D-WRT</a>';
+            h1.style.fontSize = '24px';
         }
         
         const meta = document.querySelector('.meta');
@@ -301,8 +306,8 @@ class App {
                         <p>Please check that <code>/index.json</code> is valid JSON.</p>
                     </div>
                     <div class="error-actions">
-                        <button onclick="location.reload()" class="error-btn">⟳ Retry</button>
-                        <a href="/" class="error-btn">🏠 Go Home</a>
+                        <button onclick="location.reload()" class="error-btn">⟳ ${this.localization.t('retry')}</button>
+                        <a href="/" class="error-btn">🏠 ${this.localization.t('go_home')}</a>
                     </div>
                 </div>
             `;
