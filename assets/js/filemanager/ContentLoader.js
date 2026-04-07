@@ -1,6 +1,5 @@
 import { loadingManager } from '../shared/LoadingManager.js';
 
-
 export class ContentLoader {
     constructor(localization) {
         this.localization = localization;
@@ -9,6 +8,10 @@ export class ContentLoader {
         this.infoData = null;
         this.loadError = null;
         this.fileCheckCache = new Map();
+        this.systemFiles = [
+            'header.md', 'footer.md', 'changelog.md', 'readme.md',
+            'notice.md', 'info.md', 'success.md', 'warning.md', 'error.md'
+        ];
     }
 
     async fileExists(url, taskId = null) {
@@ -135,7 +138,7 @@ export class ContentLoader {
         
         const cleanPath = path.replace(/^\/+/, '');
         if (!cleanPath) {
-            return this.indexData.files;
+            return this.filterSystemFiles(this.indexData.files);
         }
         
         const parts = cleanPath.split('/');
@@ -149,14 +152,28 @@ export class ContentLoader {
             }
         }
         
-        const children = {};
-        for (const [key, value] of Object.entries(current)) {
-            if (key !== '__INFO__') {
-                children[key] = value;
+        return this.filterSystemFiles(current);
+    }
+
+    filterSystemFiles(items) {
+        if (!items) return {};
+        
+        const filtered = {};
+        for (const [key, value] of Object.entries(items)) {
+            if (key === '__INFO__') continue;
+            
+            // Проверяем, не является ли файл системным
+            const isSystemFile = this.systemFiles.includes(key);
+            
+            // Проверяем, не является ли это папкой (у папок нет расширения .md)
+            const isDirectory = value.type === 'dir' || value.__INFO__?.type === 'dir';
+            
+            // Показываем только НЕ системные файлы и все папки
+            if (isDirectory || !isSystemFile) {
+                filtered[key] = value;
             }
         }
-        
-        return children;
+        return filtered;
     }
 
     async loadMarkdown(url, type = 'markdown') {
@@ -175,16 +192,12 @@ export class ContentLoader {
             const response = await fetch(url);
             const text = await response.text();
             
-            // Используем marked для парсинга Markdown
             let html;
             if (typeof marked !== 'undefined' && marked.parse) {
-                // Современная версия marked (асинхронная)
                 html = await marked.parse(text);
             } else if (typeof marked !== 'undefined') {
-                // Старая версия marked (синхронная)
                 html = marked(text);
             } else {
-                // Fallback на простой парсер
                 html = this.renderMarkdownSimple(text);
             }
             
@@ -197,7 +210,6 @@ export class ContentLoader {
         }
     }
 
-    // Простой fallback парсер (если marked не загрузился)
     renderMarkdownSimple(text) {
         let html = text
             .replace(/&/g, '&amp;')
