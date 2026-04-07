@@ -1,5 +1,4 @@
 {
-  "version": "1.0",
   "paths": {
     "/": {
       "header": "header.md",

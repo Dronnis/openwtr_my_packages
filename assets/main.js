@@ -13,7 +13,6 @@ class App {
         this.fileManager = null;
         this.config = null;
         this.currentLayout = localStorage.getItem('filemanager-layout') || 'list';
-        this.isTransitioning = false;
     }
 
     async init() {
@@ -32,7 +31,6 @@ class App {
         this.setupHeader();
         this.setupFooter();
         this.createLanguageSwitcher();
-        this.setupNavigationHandlers();
         
         const currentPath = this.getCurrentPath();
         
@@ -48,105 +46,6 @@ class App {
         
         this.setupGlobalFunctions();
         this.setupYear();
-        this.setupPopStateHandler();
-    }
-
-    setupNavigationHandlers() {
-        document.addEventListener('click', async (e) => {
-            const link = e.target.closest('a');
-            if (!link) return;
-            
-            const href = link.getAttribute('href');
-            if (!href || href.startsWith('http') || href.startsWith('https') || href.startsWith('javascript:') || link.hasAttribute('download')) {
-                return;
-            }
-            
-            e.preventDefault();
-            
-            const url = new URL(href, window.location.href);
-            const targetPath = url.pathname;
-            
-            if (targetPath === window.location.pathname) {
-                return;
-            }
-            
-            await this.navigateTo(targetPath);
-        });
-    }
-
-    setupPopStateHandler() {
-        window.addEventListener('popstate', async (event) => {
-            if (event.state && event.state.path) {
-                await this.navigateTo(event.state.path, false);
-            } else {
-                await this.navigateTo(window.location.pathname, false);
-            }
-        });
-    }
-
-    async navigateTo(path, addToHistory = true) {
-        if (this.isTransitioning) return;
-        
-        this.isTransitioning = true;
-        
-        await this.fadeOut();
-        
-        try {
-            if (path === '/' || path === '/index.html') {
-                this.indexPage = new IndexPage(this.contentLoader, this.localization, this.config);
-                await this.indexPage.render();
-                this.setupMainPage();
-            } else {
-                this.fileManager = new FileManager(this.contentLoader, this.localization, this.config);
-                await this.fileManager.render(path);
-                this.setupFileManagerEvents();
-            }
-            
-            if (addToHistory) {
-                history.pushState({ path: path }, '', path);
-            }
-            
-            document.title = this.getPageTitle(path);
-            
-        } catch (error) {
-            console.error('Navigation error:', error);
-        } finally {
-            await this.fadeIn();
-            this.isTransitioning = false;
-        }
-    }
-
-    async fadeOut() {
-        const main = document.querySelector('main');
-        if (!main) return;
-        
-        main.style.transition = 'opacity 0.2s ease';
-        main.style.opacity = '0';
-        
-        await new Promise(resolve => setTimeout(resolve, 150));
-    }
-
-    async fadeIn() {
-        const main = document.querySelector('main');
-        if (!main) return;
-        
-        main.style.opacity = '1';
-        
-        setTimeout(() => {
-            if (main) {
-                main.style.transition = '';
-            }
-        }, 200);
-    }
-
-    getPageTitle(path) {
-        if (path === '/' || path === '/index.html') {
-            return this.config?.title || 'D-WRT - Extra Packages for OpenWrt';
-        }
-        
-        const parts = path.split('/').filter(p => p);
-        const lastPart = parts[parts.length - 1];
-        return `${lastPart} - D-WRT`;
     }
 
     setupHeader() {
@@ -167,8 +66,10 @@ class App {
         
         if (this.config?.mainPage?.quickLinks) {
             for (const link of this.config.mainPage.quickLinks) {
-                const target = link.download ? `download="${link.path}"` : '';
-                quickLinks.innerHTML += `<a href="${link.path}" ${target} class="quick-link-item">${link.label}</a>`;
+                const isExternal = link.path.startsWith('http://') || link.path.startsWith('https://');
+                const target = isExternal ? 'target="_blank" rel="noopener noreferrer"' : '';
+                const download = link.download ? `download="${link.path}"` : '';
+                quickLinks.innerHTML += `<a href="${link.path}" ${target} ${download} class="quick-link-item">${link.label}</a>`;
             }
         }
         
@@ -194,22 +95,21 @@ class App {
         
         if (this.config?.footer?.links) {
             for (const link of this.config.footer.links) {
-                footerLinks.innerHTML += `<a href="${link.url}" target="_blank" rel="noopener noreferrer">${link.label}</a>`;
-                footerLinks.innerHTML += '<span class="separator">|</span>';
+                const isExternal = link.url.startsWith('http://') || link.url.startsWith('https://');
+                const target = isExternal ? 'target="_blank" rel="noopener noreferrer"' : '';
+                footerLinks.innerHTML += `<a href="${link.url}" ${target}>${link.label}</a>`;
             }
         } else {
             footerLinks.innerHTML = `
                 <a href="https://github.com/Dronnis/kwrt" target="_blank">GitHub</a>
-                <span class="separator">|</span>
-                <a href="#" target="_blank">Documentation</a>
-                <span class="separator">|</span>
-                <a href="#" target="_blank">Support</a>
+                <a href="https://github.com/Dronnis/kwrt/issues" target="_blank">Issues</a>
+                <a href="https://github.com/Dronnis/kwrt/wiki" target="_blank">Documentation</a>
             `;
         }
         
         const copyright = document.createElement('div');
         copyright.className = 'copyright';
-        copyright.innerHTML = `<span id="year"></span> D-WRT Project`;
+        copyright.innerHTML = `<span id="year"></span> D-WRT Project • <a href="https://github.com/Dronnis/kwrt" target="_blank">github.com/Dronnis/kwrt</a>`;
         
         footer.innerHTML = '';
         footer.appendChild(footerLinks);
@@ -235,7 +135,7 @@ class App {
             option.innerHTML = `${flagMap[locale]} ${nameMap[locale]}`;
             option.onclick = async () => {
                 if (this.localization.setLocale(locale)) {
-                    await this.navigateTo(window.location.pathname, false);
+                    window.location.reload();
                 }
             };
             switcher.appendChild(option);

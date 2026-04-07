@@ -82,17 +82,17 @@ export class ContentLoader {
                 this.infoData = JSON.parse(text);
                 loadingManager.completeTask(infoId, true);
             } else {
-                this.infoData = { version: "1.0", paths: {} };
+                this.infoData = { paths: {} };
                 loadingManager.completeTask(infoId, true);
             }
         } catch (error) {
             console.warn('Failed to load info.json:', error);
-            this.infoData = { version: "1.0", paths: {} };
+            this.infoData = { paths: {} };
             loadingManager.completeTask(infoId, false);
         }
     }
 
-    getPathInfo(path) {
+    getPathConfig(path) {
         if (!this.infoData || !this.infoData.paths) {
             return null;
         }
@@ -100,21 +100,13 @@ export class ContentLoader {
         const cleanPath = path.replace(/^\/+|\/+$/g, '');
         const normalizedPath = cleanPath ? `/${cleanPath}` : '/';
         
-        let bestMatch = null;
-        let bestMatchLength = -1;
-        
         for (const [key, value] of Object.entries(this.infoData.paths)) {
             if (normalizedPath === key) {
                 return value;
             }
-            
-            if (normalizedPath.startsWith(key) && key.length > bestMatchLength) {
-                bestMatch = value;
-                bestMatchLength = key.length;
-            }
         }
         
-        return bestMatch;
+        return null;
     }
 
     getNodeInfo(path) {
@@ -233,47 +225,53 @@ export class ContentLoader {
         };
         
         const cleanPath = folderPath.replace(/^\/+|\/+$/g, '');
-        const basePath = cleanPath ? `/${cleanPath}` : '/';
+        const normalizedPath = cleanPath ? `/${cleanPath}` : '/';
         
-        const pathInfo = this.getPathInfo(basePath);
+        const pathConfig = this.getPathConfig(normalizedPath);
         
-        if (pathInfo) {
-            if (pathInfo.header) {
-                const headerPath = `${basePath === '/' ? '' : basePath}${pathInfo.header}`;
-                if (await this.fileExists(headerPath, `check_header_${basePath}`)) {
+        if (pathConfig) {
+            const basePath = normalizedPath === '/' ? '' : normalizedPath;
+            
+            if (pathConfig.header) {
+                const headerPath = `${basePath}${pathConfig.header}`;
+                const exists = await this.fileExists(headerPath, `check_header_${normalizedPath}`);
+                if (exists) {
                     content.header = await this.loadMarkdown(headerPath, 'header');
                 }
             }
             
-            if (pathInfo.footer) {
-                const footerPath = `${basePath === '/' ? '' : basePath}${pathInfo.footer}`;
-                if (await this.fileExists(footerPath, `check_footer_${basePath}`)) {
+            if (pathConfig.footer) {
+                const footerPath = `${basePath}${pathConfig.footer}`;
+                const exists = await this.fileExists(footerPath, `check_footer_${normalizedPath}`);
+                if (exists) {
                     content.footer = await this.loadMarkdown(footerPath, 'footer');
                 }
             }
             
-            if (pathInfo.changelog) {
-                const changelogPath = `${basePath === '/' ? '' : basePath}${pathInfo.changelog}`;
-                if (await this.fileExists(changelogPath, `check_changelog_${basePath}`)) {
+            if (pathConfig.changelog) {
+                const changelogPath = `${basePath}${pathConfig.changelog}`;
+                const exists = await this.fileExists(changelogPath, `check_changelog_${normalizedPath}`);
+                if (exists) {
                     content.changelog = await this.loadMarkdown(changelogPath, 'changelog');
                 }
             }
             
-            if (pathInfo.readme) {
-                const readmePath = `${basePath === '/' ? '' : basePath}${pathInfo.readme}`;
-                if (await this.fileExists(readmePath, `check_readme_${basePath}`)) {
+            if (pathConfig.readme) {
+                const readmePath = `${basePath}${pathConfig.readme}`;
+                const exists = await this.fileExists(readmePath, `check_readme_${normalizedPath}`);
+                if (exists) {
                     content.readme = await this.loadMarkdown(readmePath, 'readme');
                 }
             }
             
-            if (pathInfo.messages) {
+            if (pathConfig.messages) {
                 const messageTypes = ['notice', 'info', 'success', 'warning', 'error'];
                 for (const msgType of messageTypes) {
-                    if (pathInfo.messages[msgType]) {
-                        const msgPath = `${basePath === '/' ? '' : basePath}${pathInfo.messages[msgType]}`;
+                    if (pathConfig.messages[msgType]) {
+                        const msgPath = `${basePath}${pathConfig.messages[msgType]}`;
                         const exists = await this.fileExists(msgPath, `check_msg_${msgPath}`);
                         if (exists) {
-                            const taskId = `load_${msgType}_${basePath}`;
+                            const taskId = `load_${msgType}_${normalizedPath}`;
                             loadingManager.startTask(taskId, 'message');
                             try {
                                 const response = await fetch(msgPath);
