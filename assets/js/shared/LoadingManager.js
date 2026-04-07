@@ -5,7 +5,6 @@ export class LoadingManager {
         this.completedTasks = 0;
         this.failedTasks = 0;
         this.currentTask = null;
-        this.onComplete = null;
         this.isActive = false;
     }
 
@@ -15,7 +14,7 @@ export class LoadingManager {
         }
         
         if (!this.loadingTasks.has(id)) {
-            this.loadingTasks.set(id, { type, status: 'loading', startTime: Date.now() });
+            this.loadingTasks.set(id, { type, status: 'loading' });
             this.totalTasks++;
             this.currentTask = { id, type };
             this.updateUI();
@@ -26,7 +25,6 @@ export class LoadingManager {
         const task = this.loadingTasks.get(id);
         if (task && task.status === 'loading') {
             task.status = success ? 'completed' : 'failed';
-            task.endTime = Date.now();
             
             if (success) {
                 this.completedTasks++;
@@ -97,11 +95,7 @@ export class LoadingManager {
         }
         
         if (statusEl) {
-            if (total > 0) {
-                statusEl.textContent = `${completed}/${total}`;
-            } else {
-                statusEl.textContent = '';
-            }
+            statusEl.textContent = total > 0 ? `${completed}/${total}` : '';
         }
     }
 
