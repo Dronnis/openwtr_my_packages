@@ -4,14 +4,13 @@ export class DynamicLoader {
     constructor() {
         this.loadedModules = new Map();
         this.loadingPromises = new Map();
-        this.moduleCache = new Map();
     }
 
-    async loadModule(url, baseUrl = null) {
+    async loadModule(url) {
         // Проверяем, загружен ли уже модуль
-        if (this.moduleCache.has(url)) {
+        if (this.loadedModules.has(url)) {
             console.log(`Module already loaded: ${url}`);
-            return this.moduleCache.get(url);
+            return this.loadedModules.get(url);
         }
         
         // Проверяем, не загружается ли уже модуль
@@ -20,172 +19,195 @@ export class DynamicLoader {
             return this.loadingPromises.get(url);
         }
         
-        const loadPromise = this._loadModuleInternal(url, baseUrl);
+        const loadPromise = this._loadModuleInternal(url);
         this.loadingPromises.set(url, loadPromise);
         
         try {
             const result = await loadPromise;
-            this.moduleCache.set(url, result);
+            this.loadedModules.set(url, result);
             return result;
         } finally {
             this.loadingPromises.delete(url);
         }
     }
     
-    async _loadModuleInternal(url, baseUrl = null) {
+    async _loadModuleInternal(url) {
+        // Проверяем, нужно ли обойти кеш
+        const bypassCache = cacheManager.shouldBypassCache();
+        
+        if (!bypassCache) {
+            // Пытаемся загрузить из кеша через IndexedDB
+            const cachedCode = await this.getFromIndexedDB(url);
+            if (cachedCode) {
+                console.log(`Using cached module from IndexedDB: ${url}`);
+                return await this.executeModule(cachedCode, url);
+            }
+        }
+        
+        // Загружаем свежий модуль
+        console.log(`Fetching module: ${url}`);
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status} for ${url}`);
+        }
+        const code = await response.text();
+        
+        // Сохраняем в IndexedDB
+        if (!bypassCache) {
+            await this.saveToIndexedDB(url, code);
+        }
+        
+        return await this.executeModule(code, url);
+    }
+    
+    async executeModule(code, url) {
+        // Создаём blob URL для модуля
+        const blob = new Blob([code], { type: 'application/javascript' });
+        const blobUrl = URL.createObjectURL(blob);
+        
         try {
-            // Проверяем кеш
-            let code = await cacheManager.getJS(url);
-            let fromCache = true;
-            
-            if (!code) {
-                console.log(`Fetching JS module: ${url}`);
-                const response = await fetch(url);
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status} for ${url}`);
-                }
-                code = await response.text();
-                fromCache = false;
-                
-                // Сохраняем в кеш
-                await cacheManager.setJS(url, code);
-            } else {
-                console.log(`Using cached JS module: ${url}`);
-            }
-            
-            // Получаем директорию текущего модуля для разрешения относительных путей
-            const moduleDir = url.substring(0, url.lastIndexOf('/') + 1);
-            
-            // Создаём функцию-модуль с поддержкой import
-            const moduleFunction = new Function(
-                'exports',
-                'require',
-                'module',
-                '__filename',
-                '__dirname',
-                'import',
-                code + '\n return module.exports;'
-            );
-            
-            const moduleObj = { exports: {} };
-            
-            // Создаём require функцию для разрешения зависимостей
-            const customRequire = async (path) => {
-                let resolvedPath;
-                
-                if (path.startsWith('./') || path.startsWith('../')) {
-                    // Относительный путь
-                    resolvedPath = new URL(path, moduleDir).href;
-                } else if (path.startsWith('/')) {
-                    // Абсолютный путь
-                    resolvedPath = path;
-                } else {
-                    // Имя модуля (не поддерживается в браузере)
-                    throw new Error(`Cannot resolve module "${path}" - only relative paths are supported`);
-                }
-                
-                // Убираем query параметры и хеш
-                resolvedPath = resolvedPath.split('?')[0].split('#')[0];
-                
-                // Загружаем модуль
-                const importedModule = await this.loadModule(resolvedPath, moduleDir);
-                return importedModule;
-            };
-            
-            // Создаём функцию import для ES модулей
-            const customImport = async (path) => {
-                let resolvedPath;
-                
-                if (path.startsWith('./') || path.startsWith('../')) {
-                    resolvedPath = new URL(path, moduleDir).href;
-                } else if (path.startsWith('/')) {
-                    resolvedPath = path;
-                } else {
-                    throw new Error(`Cannot resolve module "${path}" - only relative paths are supported`);
-                }
-                
-                resolvedPath = resolvedPath.split('?')[0].split('#')[0];
-                return await this.loadModule(resolvedPath, moduleDir);
-            };
-            
-            // Выполняем модуль
-            const result = moduleFunction(
-                moduleObj.exports,
-                customRequire,
-                moduleObj,
-                url,
-                moduleDir,
-                customImport
-            );
-            
-            const exports = moduleObj.exports;
-            
-            if (!fromCache) {
-                console.log(`JS module loaded and cached: ${url}`);
-            } else {
-                console.log(`JS module loaded from cache: ${url}`);
-            }
-            
-            return exports;
-            
+            // Динамически импортируем модуль
+            const module = await import(blobUrl);
+            URL.revokeObjectURL(blobUrl);
+            return module;
         } catch (error) {
-            console.error(`Error loading module ${url}:`, error);
+            URL.revokeObjectURL(blobUrl);
+            console.error(`Error executing module ${url}:`, error);
             throw error;
         }
     }
     
-    async loadScript(url) {
-        // Для обычных скриптов (не ES модулей)
-        const cachedCode = await cacheManager.getJS(url);
-        
+    async getFromIndexedDB(url) {
         return new Promise((resolve, reject) => {
-            if (cachedCode) {
-                console.log(`Using cached script: ${url}`);
-                try {
-                    // Выполняем кешированный код
-                    const script = document.createElement('script');
-                    script.textContent = cachedCode;
-                    document.head.appendChild(script);
-                    resolve();
-                } catch (error) {
-                    reject(error);
-                }
-            } else {
-                console.log(`Fetching script: ${url}`);
-                const script = document.createElement('script');
-                script.src = url;
-                script.onload = () => {
-                    // Сохраняем в кеш после загрузки
-                    fetch(url)
-                        .then(response => response.text())
-                        .then(code => cacheManager.setJS(url, code))
-                        .catch(console.error);
-                    resolve();
+            const request = indexedDB.open('DWRTCache', 1);
+            
+            request.onerror = () => {
+                console.error('IndexedDB error:', request.error);
+                resolve(null);
+            };
+            
+            request.onsuccess = () => {
+                const db = request.result;
+                const transaction = db.transaction(['modules'], 'readonly');
+                const store = transaction.objectStore('modules');
+                const getRequest = store.get(url);
+                
+                getRequest.onsuccess = () => {
+                    const result = getRequest.result;
+                    if (result && result.expiry > Date.now()) {
+                        resolve(result.code);
+                    } else {
+                        resolve(null);
+                    }
                 };
-                script.onerror = reject;
-                document.head.appendChild(script);
-            }
+                
+                getRequest.onerror = () => {
+                    resolve(null);
+                };
+                
+                transaction.oncomplete = () => {
+                    db.close();
+                };
+            };
+            
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                if (!db.objectStoreNames.contains('modules')) {
+                    db.createObjectStore('modules', { keyPath: 'url' });
+                }
+            };
         });
     }
     
-    preloadScripts(urls) {
-        urls.forEach(url => {
-            // Проверяем, есть ли уже в кеше
-            const cached = cacheManager.getJS(url);
-            if (cached) {
-                console.log(`JS already cached: ${url}`);
-            } else {
-                console.log(`Preloading JS: ${url}`);
+    async saveToIndexedDB(url, code) {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open('DWRTCache', 1);
+            
+            request.onerror = () => {
+                console.error('IndexedDB error:', request.error);
+                resolve(false);
+            };
+            
+            request.onsuccess = () => {
+                const db = request.result;
+                const transaction = db.transaction(['modules'], 'readwrite');
+                const store = transaction.objectStore('modules');
+                const data = {
+                    url: url,
+                    code: code,
+                    timestamp: Date.now(),
+                    expiry: Date.now() + (12 * 60 * 60 * 1000) // 12 часов
+                };
+                
+                const putRequest = store.put(data);
+                putRequest.onsuccess = () => {
+                    console.log(`Saved to IndexedDB: ${url}`);
+                    resolve(true);
+                };
+                putRequest.onerror = () => {
+                    console.error('Save to IndexedDB failed:', putRequest.error);
+                    resolve(false);
+                };
+                
+                transaction.oncomplete = () => {
+                    db.close();
+                };
+            };
+            
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                if (!db.objectStoreNames.contains('modules')) {
+                    db.createObjectStore('modules', { keyPath: 'url' });
+                }
+            };
+        });
+    }
+    
+    async clearIndexedDBCache() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open('DWRTCache', 1);
+            
+            request.onsuccess = () => {
+                const db = request.result;
+                const transaction = db.transaction(['modules'], 'readwrite');
+                const store = transaction.objectStore('modules');
+                const clearRequest = store.clear();
+                
+                clearRequest.onsuccess = () => {
+                    console.log('IndexedDB cache cleared');
+                    resolve(true);
+                };
+                clearRequest.onerror = () => {
+                    console.error('Clear IndexedDB failed:', clearRequest.error);
+                    resolve(false);
+                };
+                
+                transaction.oncomplete = () => {
+                    db.close();
+                };
+            };
+            
+            request.onerror = () => {
+                resolve(false);
+            };
+        });
+    }
+    
+    async preloadScripts(urls) {
+        // Предзагрузка через IndexedDB
+        for (const url of urls) {
+            const cached = await this.getFromIndexedDB(url);
+            if (!cached && !cacheManager.shouldBypassCache()) {
+                console.log(`Preloading: ${url}`);
                 fetch(url)
                     .then(response => response.text())
-                    .then(code => cacheManager.setJS(url, code))
+                    .then(code => this.saveToIndexedDB(url, code))
                     .catch(error => console.error(`Preload failed for ${url}:`, error));
             }
-        });
+        }
     }
     
     clearModuleCache() {
-        this.moduleCache.clear();
         this.loadedModules.clear();
         this.loadingPromises.clear();
         console.log('Module cache cleared');
