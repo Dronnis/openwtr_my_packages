@@ -69,7 +69,6 @@ export class LoadingManager {
             return this.localization.t(key);
         }
         
-        // Fallback на английский
         const fallback = {
             'index': 'Loading index...',
             'info': 'Loading metadata...',

@@ -50,7 +50,6 @@ export class UIHelper {
         };
         const icon = icons[type] || '📌';
         
-        // content уже содержит обёртку с markdown-content
         return `
             <div class="message message-${type}">
                 <div class="message-icon">${icon}</div>
