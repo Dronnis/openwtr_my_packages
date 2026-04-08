@@ -10,6 +10,7 @@ on:
       - '*.gz'
       - 'changelog.md'
       - '!assets/**'
+      - '!docs/**'
   workflow_dispatch:
 
 permissions:
