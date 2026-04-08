@@ -1,5 +1,6 @@
-import { UIHelper } from '../shared/UIHelper.js';
-import { loadingManager } from '../shared/LoadingManager.js';
+import { UIHelper } from '/assets/js/shared/UIHelper.js';
+import { loadingManager } from '/assets/js/shared/LoadingManager.js';
+
 
 export class FileListRenderer {
     constructor(contentLoader, localization) {
