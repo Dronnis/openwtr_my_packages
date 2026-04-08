@@ -1,10 +1,7 @@
 import { loadingManager } from './js/shared/LoadingManager.js';
 import { Localization } from './js/shared/Localization.js';
-import { ContentLoader } from './js/filemanager/ContentLoader.js';
-import { IndexPage } from './js/index/IndexPage.js';
-import { FileManager } from './js/filemanager/FileManager.js';
-import { UIHelper } from './js/shared/UIHelper.js';
 import { cacheManager } from './js/shared/CacheManager.js';
+import { dynamicLoader } from './js/shared/DynamicLoader.js';
 
 class App {
     constructor() {
@@ -23,11 +20,37 @@ class App {
             cacheManager.clearAll();
         }
         
+        // Предзагрузка основных JS модулей
+        const jsFiles = [
+            '/assets/js/shared/Localization.js',
+            '/assets/js/shared/UIHelper.js',
+            '/assets/js/filemanager/ContentLoader.js',
+            '/assets/js/filemanager/FileListRenderer.js',
+            '/assets/js/filemanager/FileManager.js',
+            '/assets/js/index/IndexPage.js'
+        ];
+        
+        // Асинхронная предзагрузка JS файлов в фоне
+        setTimeout(() => {
+            dynamicLoader.preloadScripts(jsFiles);
+        }, 1000);
+        
         await this.localization.loadTranslations();
         
         loadingManager.setLocalization(this.localization);
         
-        this.contentLoader = new ContentLoader(this.localization);
+        // Динамическая загрузка модулей с кешем
+        const ContentLoaderModule = await dynamicLoader.loadModule('/assets/js/filemanager/ContentLoader.js');
+        const IndexPageModule = await dynamicLoader.loadModule('/assets/js/index/IndexPage.js');
+        const FileManagerModule = await dynamicLoader.loadModule('/assets/js/filemanager/FileManager.js');
+        const UIHelperModule = await dynamicLoader.loadModule('/assets/js/shared/UIHelper.js');
+        
+        this.ContentLoader = ContentLoaderModule.ContentLoader;
+        this.IndexPage = IndexPageModule.IndexPage;
+        this.FileManager = FileManagerModule.FileManager;
+        this.UIHelper = UIHelperModule.UIHelper;
+        
+        this.contentLoader = new this.ContentLoader(this.localization);
         
         try {
             await this.contentLoader.loadIndex();
@@ -44,11 +67,11 @@ class App {
         const currentPath = this.getCurrentPath();
         
         if (currentPath === '/' || currentPath === '/index.html') {
-            this.indexPage = new IndexPage(this.contentLoader, this.localization, this.config);
+            this.indexPage = new this.IndexPage(this.contentLoader, this.localization, this.config);
             await this.indexPage.render();
             this.setupMainPage();
         } else {
-            this.fileManager = new FileManager(this.contentLoader, this.localization, this.config);
+            this.fileManager = new this.FileManager(this.contentLoader, this.localization, this.config);
             await this.fileManager.render(currentPath);
             this.setupFileManagerEvents();
         }
@@ -57,9 +80,7 @@ class App {
         this.setupYear();
         
         // Выводим статистику кеша в консоль (для отладки)
-        if (cacheManager.shouldBypassCache()) {
-            console.log('Cache stats:', cacheManager.getCacheStats());
-        }
+        console.log('Cache stats:', cacheManager.getCacheStats());
     }
 
     setupHeader() {
@@ -269,7 +290,7 @@ class App {
                                     <div class="name">${nameSpan.textContent}</div>
                                     <div class="grid-item-size">${sizeCell ? sizeCell.textContent : '—'}</div>
                                     ${checksumHtml}
-                                    <div class="grid-item-date">${timeEl ? UIHelper.formatDate(parseInt(new Date(timeEl.getAttribute('datetime')).getTime() / 1000)) : '—'}</div>
+                                    <div class="grid-item-date">${timeEl ? this.UIHelper.formatDate(parseInt(new Date(timeEl.getAttribute('datetime')).getTime() / 1000)) : '—'}</div>
                                 </a>
                             `;
                         }
@@ -300,7 +321,7 @@ class App {
             }
         };
         
-        window.copyToClipboard = UIHelper.copyToClipboard;
+        window.copyToClipboard = this.UIHelper.copyToClipboard;
         
         // Добавляем глобальную функцию для очистки кеша
         window.clearCache = () => {
@@ -313,7 +334,7 @@ class App {
         window.showCacheStats = () => {
             const stats = cacheManager.getCacheStats();
             console.table(stats);
-            alert(`Cache Stats:\nItems: ${stats.itemCount}\nExpired: ${stats.expiredCount}\nSize: ${stats.totalSize}\nDuration: ${stats.cacheDuration}`);
+            alert(`Cache Stats:\nItems: ${stats.itemCount}\nExpired: ${stats.expiredCount}\nJS Files: ${stats.jsFiles}\nMarkdown Files: ${stats.markdownFiles}\nSize: ${stats.totalSize}\nDuration: ${stats.cacheDuration}`);
         };
         
         const savedLayout = localStorage.getItem('filemanager-layout');
