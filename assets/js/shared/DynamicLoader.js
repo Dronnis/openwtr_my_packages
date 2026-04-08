@@ -4,7 +4,6 @@ export class DynamicLoader {
     constructor() {
         this.loadedModules = new Map();
         this.loadingPromises = new Map();
-        this.baseUrl = window.location.origin;
     }
 
     async loadModule(url) {
@@ -36,116 +35,33 @@ export class DynamicLoader {
         // Проверяем, нужно ли обойти кеш
         const bypassCache = cacheManager.shouldBypassCache();
         
-        let code;
-        
         if (!bypassCache) {
-            // Пытаемся загрузить из кеша
-            const cachedCode = await this.getFromCache(url);
+            // Пытаемся загрузить из кеша через IndexedDB
+            const cachedCode = await this.getFromIndexedDB(url);
             if (cachedCode) {
-                console.log(`Using cached module: ${url}`);
-                code = cachedCode;
+                console.log(`Using cached module from IndexedDB: ${url}`);
+                return await this.executeModule(cachedCode, url);
             }
         }
         
-        if (!code) {
-            // Загружаем свежий модуль
-            console.log(`Fetching module: ${url}`);
-            const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status} for ${url}`);
-            }
-            code = await response.text();
-            
-            // Сохраняем в кеш
-            if (!bypassCache) {
-                await this.saveToCache(url, code);
-            }
+        // Загружаем свежий модуль
+        console.log(`Fetching module: ${url}`);
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status} for ${url}`);
+        }
+        const code = await response.text();
+        
+        // Сохраняем в IndexedDB
+        if (!bypassCache) {
+            await this.saveToIndexedDB(url, code);
         }
         
-        // Получаем директорию модуля
-        const lastSlash = url.lastIndexOf('/');
-        const moduleDir = lastSlash !== -1 ? url.substring(0, lastSlash + 1) : this.baseUrl + '/';
-        
-        // Переписываем относительные импорты на абсолютные
-        const rewrittenCode = this.rewriteImports(code, moduleDir, url);
-        
-        // Выполняем модуль
-        return await this.executeModule(rewrittenCode, url);
-    }
-    
-    rewriteImports(code, moduleDir, originalUrl) {
-        let rewrittenCode = code;
-        
-        // Обрабатываем import statements
-        // import x from './file.js'
-        // import { x } from '../file.js'
-        // import * as x from './file.js'
-        rewrittenCode = rewrittenCode.replace(/from\s+['"]([^'"]+)['"]/g, (match, importPath) => {
-            const resolvedPath = this.resolvePath(importPath, moduleDir);
-            if (resolvedPath !== importPath) {
-                return `from '${resolvedPath}'`;
-            }
-            return match;
-        });
-        
-        // Обрабатываем dynamic imports
-        rewrittenCode = rewrittenCode.replace(/import\(['"]([^'"]+)['"]\)/g, (match, importPath) => {
-            const resolvedPath = this.resolvePath(importPath, moduleDir);
-            if (resolvedPath !== importPath) {
-                return `import('${resolvedPath}')`;
-            }
-            return match;
-        });
-        
-        // Обрабатываем export ... from
-        rewrittenCode = rewrittenCode.replace(/export\s+.*\s+from\s+['"]([^'"]+)['"]/g, (match, importPath) => {
-            const resolvedPath = this.resolvePath(importPath, moduleDir);
-            if (resolvedPath !== importPath) {
-                return match.replace(importPath, resolvedPath);
-            }
-            return match;
-        });
-        
-        return rewrittenCode;
-    }
-    
-    resolvePath(importPath, moduleDir) {
-        // Если путь пустой
-        if (!importPath) {
-            return importPath;
-        }
-        
-        // Если путь уже абсолютный или URL
-        if (importPath.startsWith('http://') || importPath.startsWith('https://')) {
-            return importPath;
-        }
-        
-        // Если путь начинается с / - это абсолютный путь от корня
-        if (importPath.startsWith('/')) {
-            return importPath;
-        }
-        
-        // Если относительный путь (начинается с ./ или ../)
-        if (importPath.startsWith('./') || importPath.startsWith('../')) {
-            try {
-                // Создаём URL относительно moduleDir
-                const baseUrl = moduleDir.endsWith('/') ? moduleDir : moduleDir + '/';
-                const resolved = new URL(importPath, baseUrl);
-                return resolved.href;
-            } catch (error) {
-                console.warn(`Failed to resolve path: ${importPath} from ${moduleDir}`, error);
-                // Возвращаем исходный путь, возможно он сработает
-                return importPath;
-            }
-        }
-        
-        // Если это просто имя модуля (не поддерживается в браузере)
-        console.warn(`Cannot resolve bare module specifier: ${importPath}. Converting to absolute path.`);
-        return `/assets/js/${importPath}`;
+        return await this.executeModule(code, url);
     }
     
     async executeModule(code, url) {
-        // Создаём blob URL с переписанным кодом
+        // Создаём blob URL для модуля
         const blob = new Blob([code], { type: 'application/javascript' });
         const blobUrl = URL.createObjectURL(blob);
         
@@ -161,18 +77,12 @@ export class DynamicLoader {
         }
     }
     
-    async getFromCache(url) {
-        // Пытаемся получить из localStorage
-        const cached = cacheManager.get(url);
-        if (cached) {
-            return cached;
-        }
-        
-        // Пытаемся получить из IndexedDB
-        return new Promise((resolve) => {
+    async getFromIndexedDB(url) {
+        return new Promise((resolve, reject) => {
             const request = indexedDB.open('DWRTCache', 1);
             
             request.onerror = () => {
+                console.error('IndexedDB error:', request.error);
                 resolve(null);
             };
             
@@ -209,19 +119,12 @@ export class DynamicLoader {
         });
     }
     
-    async saveToCache(url, code) {
-        // Сохраняем в localStorage (если размер позволяет)
-        try {
-            cacheManager.set(url, code);
-        } catch (e) {
-            console.warn('localStorage save failed:', e);
-        }
-        
-        // Сохраняем в IndexedDB
-        return new Promise((resolve) => {
+    async saveToIndexedDB(url, code) {
+        return new Promise((resolve, reject) => {
             const request = indexedDB.open('DWRTCache', 1);
             
             request.onerror = () => {
+                console.error('IndexedDB error:', request.error);
                 resolve(false);
             };
             
@@ -233,15 +136,16 @@ export class DynamicLoader {
                     url: url,
                     code: code,
                     timestamp: Date.now(),
-                    expiry: Date.now() + (12 * 60 * 60 * 1000)
+                    expiry: Date.now() + (12 * 60 * 60 * 1000) // 12 часов
                 };
                 
                 const putRequest = store.put(data);
                 putRequest.onsuccess = () => {
-                    console.log(`Saved to cache: ${url}`);
+                    console.log(`Saved to IndexedDB: ${url}`);
                     resolve(true);
                 };
                 putRequest.onerror = () => {
+                    console.error('Save to IndexedDB failed:', putRequest.error);
                     resolve(false);
                 };
                 
@@ -259,12 +163,8 @@ export class DynamicLoader {
         });
     }
     
-    async clearCache() {
-        // Очищаем localStorage
-        cacheManager.clearAll();
-        
-        // Очищаем IndexedDB
-        return new Promise((resolve) => {
+    async clearIndexedDBCache() {
+        return new Promise((resolve, reject) => {
             const request = indexedDB.open('DWRTCache', 1);
             
             request.onsuccess = () => {
@@ -278,6 +178,7 @@ export class DynamicLoader {
                     resolve(true);
                 };
                 clearRequest.onerror = () => {
+                    console.error('Clear IndexedDB failed:', clearRequest.error);
                     resolve(false);
                 };
                 
@@ -290,6 +191,20 @@ export class DynamicLoader {
                 resolve(false);
             };
         });
+    }
+    
+    async preloadScripts(urls) {
+        // Предзагрузка через IndexedDB
+        for (const url of urls) {
+            const cached = await this.getFromIndexedDB(url);
+            if (!cached && !cacheManager.shouldBypassCache()) {
+                console.log(`Preloading: ${url}`);
+                fetch(url)
+                    .then(response => response.text())
+                    .then(code => this.saveToIndexedDB(url, code))
+                    .catch(error => console.error(`Preload failed for ${url}:`, error));
+            }
+        }
     }
     
     clearModuleCache() {

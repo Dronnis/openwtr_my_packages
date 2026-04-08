@@ -15,23 +15,31 @@ class App {
     }
 
     async init() {
+        // Регистрируем Service Worker для кеширования
+        if ('serviceWorker' in navigator) {
+            try {
+                const registration = await navigator.serviceWorker.register('/sw.js');
+                console.log('Service Worker registered:', registration);
+            } catch (error) {
+                console.error('Service Worker registration failed:', error);
+            }
+        }
+        
         // Проверяем параметр cache=false для принудительной очистки кеша
         if (cacheManager.shouldBypassCache()) {
             console.log('Cache bypass requested, clearing all cache...');
-            cacheManager.clearAll();
-            dynamicLoader.clearModuleCache();
+            await this.clearAllCaches();
         }
         
         await this.localization.loadTranslations();
         
         loadingManager.setLocalization(this.localization);
         
-        // Загружаем UIHelper
+        // Загружаем модули через dynamicLoader (с кешем через IndexedDB)
         const UIHelperModule = await dynamicLoader.loadModule('/assets/js/shared/UIHelper.js');
         this.UIHelper = UIHelperModule.UIHelper;
         window.UIHelper = this.UIHelper;
         
-        // Загружаем ContentLoader
         const ContentLoaderModule = await dynamicLoader.loadModule('/assets/js/filemanager/ContentLoader.js');
         const ContentLoader = ContentLoaderModule.ContentLoader;
         
@@ -52,14 +60,12 @@ class App {
         const currentPath = this.getCurrentPath();
         
         if (currentPath === '/' || currentPath === '/index.html') {
-            // Загружаем IndexPage
             const IndexPageModule = await dynamicLoader.loadModule('/assets/js/index/IndexPage.js');
             const IndexPage = IndexPageModule.IndexPage;
             this.indexPage = new IndexPage(this.contentLoader, this.localization, this.config);
             await this.indexPage.render();
             this.setupMainPage();
         } else {
-            // Загружаем FileManager
             const FileManagerModule = await dynamicLoader.loadModule('/assets/js/filemanager/FileManager.js');
             const FileManager = FileManagerModule.FileManager;
             this.fileManager = new FileManager(this.contentLoader, this.localization, this.config);
@@ -70,9 +76,32 @@ class App {
         this.setupGlobalFunctions();
         this.setupYear();
         
-        // Выводим статистику кеша в консоль
         const stats = cacheManager.getCacheStats();
         console.log('Cache stats:', stats);
+    }
+    
+    async clearAllCaches() {
+        // Очищаем localStorage кеш
+        cacheManager.clearAll();
+        
+        // Очищаем IndexedDB кеш
+        await dynamicLoader.clearIndexedDBCache();
+        
+        // Очищаем Service Worker кеш
+        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            const registration = await navigator.serviceWorker.getRegistration();
+            if (registration) {
+                const cache = await caches.open('d-wrt-cache-v1');
+                const keys = await cache.keys();
+                for (const key of keys) {
+                    await cache.delete(key);
+                }
+                console.log('Service Worker cache cleared');
+            }
+        }
+        
+        // Очищаем кеш модулей
+        dynamicLoader.clearModuleCache();
     }
 
     setupHeader() {
@@ -315,15 +344,12 @@ class App {
         
         window.copyToClipboard = this.UIHelper.copyToClipboard;
         
-        // Глобальная функция для очистки кеша
-        window.clearCache = () => {
-            cacheManager.clearAll();
-            dynamicLoader.clearModuleCache();
+        window.clearCache = async () => {
+            await this.clearAllCaches();
             alert('Cache cleared! Page will reload.');
             window.location.reload();
         };
         
-        // Глобальная функция для просмотра статистики кеша
         window.showCacheStats = () => {
             const stats = cacheManager.getCacheStats();
             console.table(stats);
