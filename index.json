@@ -1,0 +1,302 @@
+{
+  "cfg": {
+    "title": "Extra Packages for OpenWrt",
+    "favicon": "/favicon.ico",
+    "mainPage": {
+      "latestRelease": "releases/25.12.2",
+      "showChangelog": true,
+      "changelogFile": "changelog.md",
+      "quickLinks": [
+        {
+          "label": "📦 Все релизы",
+          "path": "releases/"
+        },
+        {
+          "label": "🔑 Ключ репозитория",
+          "path": "key-build.pub",
+          "download": true
+        }
+      ]
+    },
+    "folders": {
+      "releases": {
+        "header": "releases/header.md"
+      },
+      "releases/25.12.2": {
+        "header": "releases/25.12.2/header.md",
+        "footer": "releases/25.12.2/footer.md"
+      }
+    }
+  },
+  "files": {
+    "CNAME": {
+      "__INFO__": {
+        "icon": "file",
+        "type": "file",
+        "size": 14,
+        "date": 1775600775
+      },
+      "sha256sum": "e6b4726ed7afbd913387ecb3cc0efb7be7339384f24da7e3a02910ef64880c4c"
+    },
+    "assets": {
+      "__INFO__": {
+        "icon": "folder",
+        "type": "dir",
+        "size": 4096,
+        "date": 1775600775
+      },
+      "js": {
+        "__INFO__": {
+          "icon": "folder",
+          "type": "dir",
+          "size": 4096,
+          "date": 1775600775
+        },
+        "filemanager": {
+          "__INFO__": {
+            "icon": "folder",
+            "type": "dir",
+            "size": 4096,
+            "date": 1775600775
+          },
+          "ContentLoader.js": {
+            "__INFO__": {
+              "icon": "file",
+              "type": "file",
+              "size": 11964,
+              "date": 1775600775
+            },
+            "sha256sum": "7dece28c7ebcd5b9a3132c92a297d7092d837f774ecb6ec194ffa3af36c95b7d"
+          },
+          "FileListRenderer.js": {
+            "__INFO__": {
+              "icon": "file",
+              "type": "file",
+              "size": 9650,
+              "date": 1775600775
+            },
+            "sha256sum": "e78c38b3494851d6bd571de8bbcc827340a2bfb9c688948c5b22d584f550933e"
+          },
+          "FileManager.js": {
+            "__INFO__": {
+              "icon": "file",
+              "type": "file",
+              "size": 8841,
+              "date": 1775600775
+            },
+            "sha256sum": "f849bfdcc7ba350482761778e34d5a8d59452bd3f1d5dd916a067595164f048a"
+          }
+        },
+        "index": {
+          "__INFO__": {
+            "icon": "folder",
+            "type": "dir",
+            "size": 4096,
+            "date": 1775600775
+          },
+          "IndexPage.js": {
+            "__INFO__": {
+              "icon": "file",
+              "type": "file",
+              "size": 2881,
+              "date": 1775600775
+            },
+            "sha256sum": "5180f78be20ca90ddc2d3c74bfe32a3c2b2f2d1028cd3fee33cdede0e01c23ea"
+          }
+        },
+        "shared": {
+          "__INFO__": {
+            "icon": "folder",
+            "type": "dir",
+            "size": 4096,
+            "date": 1775600775
+          },
+          "LoadingManager.js": {
+            "__INFO__": {
+              "icon": "file",
+              "type": "file",
+              "size": 4801,
+              "date": 1775600775
+            },
+            "sha256sum": "ab3ef4a121e7d8220d67a44964cf5b3c014f37611e1fd9eab9c5b928786ce579"
+          },
+          "Localization.js": {
+            "__INFO__": {
+              "icon": "file",
+              "type": "file",
+              "size": 2140,
+              "date": 1775600775
+            },
+            "sha256sum": "4887602e326e76c6b14c6f866c48188865f9fa6654e8bedfc7916cfca290c714"
+          },
+          "UIHelper.js": {
+            "__INFO__": {
+              "icon": "file",
+              "type": "file",
+              "size": 4975,
+              "date": 1775600775
+            },
+            "sha256sum": "2663ab5a6712a37adcdac789c14a7c11e15d2d029b4333f20f5854ae13d93cb9"
+          }
+        }
+      },
+      "main.js": {
+        "__INFO__": {
+          "icon": "file",
+          "type": "file",
+          "size": 13260,
+          "date": 1775600775
+        },
+        "sha256sum": "c6a063650ea131b48d6668fc1795d7227fc370dd6ba320504f2b94d781270117"
+      },
+      "styles.css": {
+        "__INFO__": {
+          "icon": "file",
+          "type": "file",
+          "size": 20774,
+          "date": 1775600775
+        },
+        "sha256sum": "80d4b83c6f6f145fdfa5f73c58d4aa4d5668971447952930b37c560a365512e4"
+      }
+    },
+    "generator.py": {
+      "__INFO__": {
+        "icon": "file",
+        "type": "file",
+        "size": 1210,
+        "date": 1775600775
+      },
+      "sha256sum": "c276bdb2bfce866b19191571bd876210abac8ec7ad80d047d23e9c0524fa4a3a"
+    },
+    "i18n.json": {
+      "__INFO__": {
+        "icon": "file",
+        "type": "file",
+        "size": 2624,
+        "date": 1775600775
+      },
+      "sha256sum": "03f429005250ae607473d995b47c8592672896574f2c79d748fbef6c4e1b82ee"
+    },
+    "index.html": {
+      "__INFO__": {
+        "icon": "file",
+        "type": "file",
+        "size": 922,
+        "date": 1775600775
+      },
+      "sha256sum": "fe057f1923481d41d124823a4ed66ba6896f173da57c0dca4136d01e337f15fa"
+    },
+    "info.json": {
+      "__INFO__": {
+        "icon": "file",
+        "type": "file",
+        "size": 1190,
+        "date": 1775600775
+      },
+      "sha256sum": "699ca06c0167c7c03beb8d3cb6e6356c00262878ccd819a343c1d57328ea7d0e"
+    },
+    "releases": {
+      "__INFO__": {
+        "icon": "folder",
+        "type": "dir",
+        "size": 4096,
+        "date": 1775600775
+      },
+      "25.12.2": {
+        "__INFO__": {
+          "icon": "folder",
+          "type": "dir",
+          "size": 4096,
+          "date": 1775600775
+        },
+        "targets": {
+          "__INFO__": {
+            "icon": "folder",
+            "type": "dir",
+            "size": 4096,
+            "date": 1775600775
+          },
+          "error.md": {
+            "__INFO__": {
+              "icon": "file",
+              "type": "file",
+              "size": 9,
+              "date": 1775600775
+            },
+            "sha256sum": "7fe8289ef1d08dbf613bc17dd6f27b055e1dcd3b27855dfcfb256ed26ccd857f"
+          },
+          "info.md": {
+            "__INFO__": {
+              "icon": "file",
+              "type": "file",
+              "size": 9,
+              "date": 1775600775
+            },
+            "sha256sum": "7bcadc0ab8c5732170bb5127cd3fbab940b963d342f6d2494aa6ddfbcb1c830e"
+          },
+          "notice.md": {
+            "__INFO__": {
+              "icon": "file",
+              "type": "file",
+              "size": 10,
+              "date": 1775600775
+            },
+            "sha256sum": "09bcc60a072a95ad5ba1db165dae2211ba131415dde06a73842bc6126d0e254b"
+          },
+          "success.md": {
+            "__INFO__": {
+              "icon": "file",
+              "type": "file",
+              "size": 11,
+              "date": 1775600775
+            },
+            "sha256sum": "85f2334db39e5a12976d69dd194a28adc7e98364c918f22969feca443cd14be2"
+          },
+          "warning.md": {
+            "__INFO__": {
+              "icon": "file",
+              "type": "file",
+              "size": 11,
+              "date": 1775600775
+            },
+            "sha256sum": "fd45a87372f1e59a35845a19138d75b3a9d82e63ad9bd70ac4f46f5f71935f60"
+          },
+          "x86": {
+            "__INFO__": {
+              "icon": "folder",
+              "type": "dir",
+              "size": 4096,
+              "date": 1775600775
+            },
+            "64": {
+              "__INFO__": {
+                "icon": "folder",
+                "type": "dir",
+                "size": 4096,
+                "date": 1775600775
+              },
+              "openwrt-25.12.2-x86-64-generic-ext4-rootfs.img.gz": {
+                "__INFO__": {
+                  "icon": "archive",
+                  "type": "file",
+                  "size": 7,
+                  "date": 1775600775,
+                  "isLatest": true
+                },
+                "sha256sum": "26cafb94003a654827f52047a9368c0821f01f4512828a68f7bd4b44e6a0afcf"
+              }
+            }
+          }
+        }
+      }
+    },
+    "scripts": {
+      "__INFO__": {
+        "icon": "folder",
+        "type": "dir",
+        "size": 4096,
+        "date": 1775600775
+      }
+    }
+  }
+}
