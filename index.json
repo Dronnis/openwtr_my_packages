@@ -34,7 +34,7 @@
         "icon": "file",
         "type": "file",
         "size": 14,
-        "date": 1775600775
+        "date": 1775638038
       },
       "sha256sum": "e6b4726ed7afbd913387ecb3cc0efb7be7339384f24da7e3a02910ef64880c4c"
     },
@@ -43,48 +43,48 @@
         "icon": "folder",
         "type": "dir",
         "size": 4096,
-        "date": 1775600775
+        "date": 1775638038
       },
       "js": {
         "__INFO__": {
           "icon": "folder",
           "type": "dir",
           "size": 4096,
-          "date": 1775600775
+          "date": 1775638038
         },
         "filemanager": {
           "__INFO__": {
             "icon": "folder",
             "type": "dir",
             "size": 4096,
-            "date": 1775600775
+            "date": 1775638038
           },
           "ContentLoader.js": {
             "__INFO__": {
               "icon": "file",
               "type": "file",
-              "size": 11964,
-              "date": 1775600775
+              "size": 12831,
+              "date": 1775638038
             },
-            "sha256sum": "7dece28c7ebcd5b9a3132c92a297d7092d837f774ecb6ec194ffa3af36c95b7d"
+            "sha256sum": "1713694755fd4bdbd6c063c78a953655028ce626cd47ef7fc000614b81b0b61c"
           },
           "FileListRenderer.js": {
             "__INFO__": {
               "icon": "file",
               "type": "file",
-              "size": 9650,
-              "date": 1775600775
+              "size": 9651,
+              "date": 1775638038
             },
-            "sha256sum": "e78c38b3494851d6bd571de8bbcc827340a2bfb9c688948c5b22d584f550933e"
+            "sha256sum": "aff4f5045d64b9585c7b14c2ff96424db00e86af0f68323b2661c4ff90a9eaae"
           },
           "FileManager.js": {
             "__INFO__": {
               "icon": "file",
               "type": "file",
-              "size": 8841,
-              "date": 1775600775
+              "size": 9231,
+              "date": 1775638038
             },
-            "sha256sum": "f849bfdcc7ba350482761778e34d5a8d59452bd3f1d5dd916a067595164f048a"
+            "sha256sum": "7f78602eed01dc4de2782ed545d7e6a1f78223626060ee660a8c303458136674"
           }
         },
         "index": {
@@ -92,14 +92,14 @@
             "icon": "folder",
             "type": "dir",
             "size": 4096,
-            "date": 1775600775
+            "date": 1775638038
           },
           "IndexPage.js": {
             "__INFO__": {
               "icon": "file",
               "type": "file",
               "size": 2881,
-              "date": 1775600775
+              "date": 1775638038
             },
             "sha256sum": "5180f78be20ca90ddc2d3c74bfe32a3c2b2f2d1028cd3fee33cdede0e01c23ea"
           }
@@ -109,34 +109,52 @@
             "icon": "folder",
             "type": "dir",
             "size": 4096,
-            "date": 1775600775
+            "date": 1775638038
+          },
+          "CacheManager.js": {
+            "__INFO__": {
+              "icon": "file",
+              "type": "file",
+              "size": 4993,
+              "date": 1775638038
+            },
+            "sha256sum": "19ad1b49fa27a3f163dfb97d8610d1038addf8457fba6633f4c6e8f0e521803e"
+          },
+          "DynamicLoader.js": {
+            "__INFO__": {
+              "icon": "file",
+              "type": "file",
+              "size": 2077,
+              "date": 1775638038
+            },
+            "sha256sum": "50fe70a40bd0f98e6a4cdf5f8c588fd933ae47879ad5840bbd3bd21e535b29a0"
           },
           "LoadingManager.js": {
             "__INFO__": {
               "icon": "file",
               "type": "file",
-              "size": 4801,
-              "date": 1775600775
+              "size": 4799,
+              "date": 1775638038
             },
-            "sha256sum": "ab3ef4a121e7d8220d67a44964cf5b3c014f37611e1fd9eab9c5b928786ce579"
+            "sha256sum": "21872a2494dba073531499b44e5d115f93b47ac1cf308e8c301d6f0a05d1a0c1"
           },
           "Localization.js": {
             "__INFO__": {
               "icon": "file",
               "type": "file",
-              "size": 2140,
-              "date": 1775600775
+              "size": 3670,
+              "date": 1775638038
             },
-            "sha256sum": "4887602e326e76c6b14c6f866c48188865f9fa6654e8bedfc7916cfca290c714"
+            "sha256sum": "291790d9c7541d517c526495cd72b69d90e5436c4b35fdeef66ea6315ff83886"
           },
           "UIHelper.js": {
             "__INFO__": {
               "icon": "file",
               "type": "file",
-              "size": 4975,
-              "date": 1775600775
+              "size": 4897,
+              "date": 1775638038
             },
-            "sha256sum": "2663ab5a6712a37adcdac789c14a7c11e15d2d029b4333f20f5854ae13d93cb9"
+            "sha256sum": "d704b04a12377c88a0a30502caee3f2ea32070f0bfbc4877ec154d924dbee1a6"
           }
         }
       },
@@ -144,19 +162,36 @@
         "__INFO__": {
           "icon": "file",
           "type": "file",
-          "size": 13260,
-          "date": 1775600775
+          "size": 15421,
+          "date": 1775638038
         },
-        "sha256sum": "c6a063650ea131b48d6668fc1795d7227fc370dd6ba320504f2b94d781270117"
+        "sha256sum": "55751626054956b7743209d3af8dc570fc573882ca3f40b3b7d87a2f768d38b3"
       },
       "styles.css": {
         "__INFO__": {
           "icon": "file",
           "type": "file",
-          "size": 20774,
-          "date": 1775600775
+          "size": 22884,
+          "date": 1775638038
         },
-        "sha256sum": "80d4b83c6f6f145fdfa5f73c58d4aa4d5668971447952930b37c560a365512e4"
+        "sha256sum": "a9e107a553e2fa77fbb0fcb3be4568dc4d935b56cca59e900333b3db25de8f8c"
+      }
+    },
+    "docs": {
+      "__INFO__": {
+        "icon": "folder",
+        "type": "dir",
+        "size": 4096,
+        "date": 1775638038
+      },
+      "1.txt": {
+        "__INFO__": {
+          "icon": "file",
+          "type": "file",
+          "size": 0,
+          "date": 1775638038
+        },
+        "sha256sum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       }
     },
     "generator.py": {
@@ -164,7 +199,7 @@
         "icon": "file",
         "type": "file",
         "size": 1210,
-        "date": 1775600775
+        "date": 1775638038
       },
       "sha256sum": "c276bdb2bfce866b19191571bd876210abac8ec7ad80d047d23e9c0524fa4a3a"
     },
@@ -172,56 +207,56 @@
       "__INFO__": {
         "icon": "file",
         "type": "file",
-        "size": 2624,
-        "date": 1775600775
+        "size": 5115,
+        "date": 1775638038
       },
-      "sha256sum": "03f429005250ae607473d995b47c8592672896574f2c79d748fbef6c4e1b82ee"
+      "sha256sum": "541f03cfb58ff21270ea7ff2fd456b2880487cc797342fffa3f5d2f770feacc0"
     },
     "index.html": {
       "__INFO__": {
         "icon": "file",
         "type": "file",
-        "size": 922,
-        "date": 1775600775
+        "size": 882,
+        "date": 1775638038
       },
-      "sha256sum": "fe057f1923481d41d124823a4ed66ba6896f173da57c0dca4136d01e337f15fa"
+      "sha256sum": "e4bc7c8108e1729678b998eca4a8347276155ddc1c02eb0eb174adc5b5ff354a"
     },
     "info.json": {
       "__INFO__": {
         "icon": "file",
         "type": "file",
-        "size": 1190,
-        "date": 1775600775
+        "size": 1179,
+        "date": 1775638038
       },
-      "sha256sum": "699ca06c0167c7c03beb8d3cb6e6356c00262878ccd819a343c1d57328ea7d0e"
+      "sha256sum": "24d138cf910d9ee05273290af6bce1ad8c81949606e1bea0235f2853879f9cf3"
     },
     "releases": {
       "__INFO__": {
         "icon": "folder",
         "type": "dir",
         "size": 4096,
-        "date": 1775600775
+        "date": 1775638038
       },
       "25.12.2": {
         "__INFO__": {
           "icon": "folder",
           "type": "dir",
           "size": 4096,
-          "date": 1775600775
+          "date": 1775638038
         },
         "targets": {
           "__INFO__": {
             "icon": "folder",
             "type": "dir",
             "size": 4096,
-            "date": 1775600775
+            "date": 1775638038
           },
           "error.md": {
             "__INFO__": {
               "icon": "file",
               "type": "file",
               "size": 9,
-              "date": 1775600775
+              "date": 1775638038
             },
             "sha256sum": "7fe8289ef1d08dbf613bc17dd6f27b055e1dcd3b27855dfcfb256ed26ccd857f"
           },
@@ -230,7 +265,7 @@
               "icon": "file",
               "type": "file",
               "size": 9,
-              "date": 1775600775
+              "date": 1775638038
             },
             "sha256sum": "7bcadc0ab8c5732170bb5127cd3fbab940b963d342f6d2494aa6ddfbcb1c830e"
           },
@@ -239,7 +274,7 @@
               "icon": "file",
               "type": "file",
               "size": 10,
-              "date": 1775600775
+              "date": 1775638038
             },
             "sha256sum": "09bcc60a072a95ad5ba1db165dae2211ba131415dde06a73842bc6126d0e254b"
           },
@@ -248,7 +283,7 @@
               "icon": "file",
               "type": "file",
               "size": 11,
-              "date": 1775600775
+              "date": 1775638038
             },
             "sha256sum": "85f2334db39e5a12976d69dd194a28adc7e98364c918f22969feca443cd14be2"
           },
@@ -257,7 +292,7 @@
               "icon": "file",
               "type": "file",
               "size": 11,
-              "date": 1775600775
+              "date": 1775638038
             },
             "sha256sum": "fd45a87372f1e59a35845a19138d75b3a9d82e63ad9bd70ac4f46f5f71935f60"
           },
@@ -266,21 +301,21 @@
               "icon": "folder",
               "type": "dir",
               "size": 4096,
-              "date": 1775600775
+              "date": 1775638038
             },
             "64": {
               "__INFO__": {
                 "icon": "folder",
                 "type": "dir",
                 "size": 4096,
-                "date": 1775600775
+                "date": 1775638038
               },
               "openwrt-25.12.2-x86-64-generic-ext4-rootfs.img.gz": {
                 "__INFO__": {
                   "icon": "archive",
                   "type": "file",
                   "size": 7,
-                  "date": 1775600775,
+                  "date": 1775638038,
                   "isLatest": true
                 },
                 "sha256sum": "26cafb94003a654827f52047a9368c0821f01f4512828a68f7bd4b44e6a0afcf"
@@ -295,8 +330,17 @@
         "icon": "folder",
         "type": "dir",
         "size": 4096,
-        "date": 1775600775
+        "date": 1775638038
       }
+    },
+    "sw.js": {
+      "__INFO__": {
+        "icon": "file",
+        "type": "file",
+        "size": 2852,
+        "date": 1775638038
+      },
+      "sha256sum": "b9e93d2c841b971e5257cf277af19df2a769cfed9c50df9766de1f1625294ded"
     }
   }
 }
