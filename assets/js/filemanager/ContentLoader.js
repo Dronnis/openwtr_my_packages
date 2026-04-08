@@ -1,4 +1,5 @@
 import { loadingManager } from '../shared/LoadingManager.js';
+import { cacheManager } from '../shared/CacheManager.js';
 
 export class ContentLoader {
     constructor(localization) {
@@ -35,23 +36,43 @@ export class ContentLoader {
         }
     }
 
+    async fetchWithCache(url, options = {}) {
+        const cachedData = cacheManager.get(url);
+        
+        if (cachedData) {
+            return cachedData;
+        }
+        
+        try {
+            const response = await fetch(url, options);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            
+            let data;
+            const contentType = response.headers.get('content-type');
+            
+            if (contentType && contentType.includes('application/json')) {
+                data = await response.json();
+            } else {
+                data = await response.text();
+            }
+            
+            cacheManager.set(url, data);
+            return data;
+        } catch (error) {
+            throw error;
+        }
+    }
+
     async loadIndex() {
         const indexId = 'load_index';
         loadingManager.startTask(indexId, 'index');
         
         try {
-            const response = await fetch('/index.json');
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
+            const data = await this.fetchWithCache('/index.json');
             
-            const text = await response.text();
-            
-            try {
-                this.indexData = JSON.parse(text);
-            } catch (parseError) {
-                throw new Error(`JSON Parse Error: ${parseError.message}`);
-            }
+            this.indexData = data;
             
             if (!this.indexData.cfg) {
                 throw new Error('Invalid index.json: missing "cfg" section');
@@ -79,16 +100,9 @@ export class ContentLoader {
         loadingManager.startTask(infoId, 'info');
         
         try {
-            const exists = await this.fileExists('/info.json', 'check_info');
-            if (exists) {
-                const response = await fetch('/info.json');
-                const text = await response.text();
-                this.infoData = JSON.parse(text);
-                loadingManager.completeTask(infoId, true);
-            } else {
-                this.infoData = { paths: {} };
-                loadingManager.completeTask(infoId, true);
-            }
+            const data = await this.fetchWithCache('/info.json');
+            this.infoData = data;
+            loadingManager.completeTask(infoId, true);
         } catch (error) {
             console.warn('Failed to load info.json:', error);
             this.infoData = { paths: {} };
@@ -162,13 +176,9 @@ export class ContentLoader {
         for (const [key, value] of Object.entries(items)) {
             if (key === '__INFO__') continue;
             
-            // Проверяем, не является ли файл системным
             const isSystemFile = this.systemFiles.includes(key);
-            
-            // Проверяем, не является ли это папкой (у папок нет расширения .md)
             const isDirectory = value.type === 'dir' || value.__INFO__?.type === 'dir';
             
-            // Показываем только НЕ системные файлы и все папки
             if (isDirectory || !isSystemFile) {
                 filtered[key] = value;
             }
@@ -189,8 +199,7 @@ export class ContentLoader {
                 return null;
             }
             
-            const response = await fetch(url);
-            const text = await response.text();
+            const text = await this.fetchWithCache(url);
             
             let html;
             if (typeof marked !== 'undefined' && marked.parse) {
@@ -203,7 +212,6 @@ export class ContentLoader {
             
             loadingManager.completeTask(id, true);
             
-            // Добавляем класс в зависимости от типа контента
             let contentTypeClass = '';
             switch (type) {
                 case 'header':
@@ -321,8 +329,7 @@ export class ContentLoader {
                             const taskId = `load_${msgType}_${normalizedPath}`;
                             loadingManager.startTask(taskId, 'message');
                             try {
-                                const response = await fetch(msgPath);
-                                const text = await response.text();
+                                const text = await this.fetchWithCache(msgPath);
                                 if (text && text.trim()) {
                                     let html;
                                     if (typeof marked !== 'undefined' && marked.parse) {

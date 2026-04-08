@@ -4,6 +4,7 @@ import { ContentLoader } from './js/filemanager/ContentLoader.js';
 import { IndexPage } from './js/index/IndexPage.js';
 import { FileManager } from './js/filemanager/FileManager.js';
 import { UIHelper } from './js/shared/UIHelper.js';
+import { cacheManager } from './js/shared/CacheManager.js';
 
 class App {
     constructor() {
@@ -16,9 +17,14 @@ class App {
     }
 
     async init() {
+        // Проверяем параметр cache=false для принудительной очистки кеша
+        if (cacheManager.shouldBypassCache()) {
+            console.log('Cache bypass requested, clearing all cache...');
+            cacheManager.clearAll();
+        }
+        
         await this.localization.loadTranslations();
         
-        // Передаём локализацию в LoadingManager
         loadingManager.setLocalization(this.localization);
         
         this.contentLoader = new ContentLoader(this.localization);
@@ -49,6 +55,11 @@ class App {
         
         this.setupGlobalFunctions();
         this.setupYear();
+        
+        // Выводим статистику кеша в консоль (для отладки)
+        if (cacheManager.shouldBypassCache()) {
+            console.log('Cache stats:', cacheManager.getCacheStats());
+        }
     }
 
     setupHeader() {
@@ -148,6 +159,9 @@ class App {
     }
 
     setupMainPage() {
+        const breadcrumbDiv = document.querySelector('.breadcrumbs');
+        if (breadcrumbDiv) breadcrumbDiv.style.display = 'none';
+        
         const h1 = document.querySelector('h1');
         if (h1) {
             h1.innerHTML = '<a href="/">D-WRT</a>';
@@ -159,6 +173,9 @@ class App {
     }
 
     setupFileManagerEvents() {
+        const breadcrumbDiv = document.querySelector('.breadcrumbs');
+        if (breadcrumbDiv) breadcrumbDiv.style.display = 'none';
+        
         const meta = document.querySelector('.meta');
         if (meta) meta.style.display = 'flex';
     }
@@ -284,6 +301,20 @@ class App {
         };
         
         window.copyToClipboard = UIHelper.copyToClipboard;
+        
+        // Добавляем глобальную функцию для очистки кеша
+        window.clearCache = () => {
+            cacheManager.clearAll();
+            alert('Cache cleared! Page will reload.');
+            window.location.reload();
+        };
+        
+        // Добавляем глобальную функцию для просмотра статистики кеша
+        window.showCacheStats = () => {
+            const stats = cacheManager.getCacheStats();
+            console.table(stats);
+            alert(`Cache Stats:\nItems: ${stats.itemCount}\nExpired: ${stats.expiredCount}\nSize: ${stats.totalSize}\nDuration: ${stats.cacheDuration}`);
+        };
         
         const savedLayout = localStorage.getItem('filemanager-layout');
         if (savedLayout && savedLayout !== this.currentLayout) {
