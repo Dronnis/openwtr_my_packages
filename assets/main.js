@@ -11,6 +11,7 @@ class App {
         this.fileManager = null;
         this.config = null;
         this.currentLayout = localStorage.getItem('filemanager-layout') || 'list';
+        this.UIHelper = null;
     }
 
     async init() {
@@ -18,39 +19,23 @@ class App {
         if (cacheManager.shouldBypassCache()) {
             console.log('Cache bypass requested, clearing all cache...');
             cacheManager.clearAll();
+            dynamicLoader.clearModuleCache();
         }
-        
-        // Предзагрузка основных JS модулей
-        const jsFiles = [
-            '/assets/js/shared/Localization.js',
-            '/assets/js/shared/UIHelper.js',
-            '/assets/js/filemanager/ContentLoader.js',
-            '/assets/js/filemanager/FileListRenderer.js',
-            '/assets/js/filemanager/FileManager.js',
-            '/assets/js/index/IndexPage.js'
-        ];
-        
-        // Асинхронная предзагрузка JS файлов в фоне
-        setTimeout(() => {
-            dynamicLoader.preloadScripts(jsFiles);
-        }, 1000);
         
         await this.localization.loadTranslations();
         
         loadingManager.setLocalization(this.localization);
         
-        // Динамическая загрузка модулей с кешем
-        const ContentLoaderModule = await dynamicLoader.loadModule('/assets/js/filemanager/ContentLoader.js');
-        const IndexPageModule = await dynamicLoader.loadModule('/assets/js/index/IndexPage.js');
-        const FileManagerModule = await dynamicLoader.loadModule('/assets/js/filemanager/FileManager.js');
+        // Загружаем UIHelper
         const UIHelperModule = await dynamicLoader.loadModule('/assets/js/shared/UIHelper.js');
-        
-        this.ContentLoader = ContentLoaderModule.ContentLoader;
-        this.IndexPage = IndexPageModule.IndexPage;
-        this.FileManager = FileManagerModule.FileManager;
         this.UIHelper = UIHelperModule.UIHelper;
+        window.UIHelper = this.UIHelper;
         
-        this.contentLoader = new this.ContentLoader(this.localization);
+        // Загружаем ContentLoader
+        const ContentLoaderModule = await dynamicLoader.loadModule('/assets/js/filemanager/ContentLoader.js');
+        const ContentLoader = ContentLoaderModule.ContentLoader;
+        
+        this.contentLoader = new ContentLoader(this.localization);
         
         try {
             await this.contentLoader.loadIndex();
@@ -67,11 +52,17 @@ class App {
         const currentPath = this.getCurrentPath();
         
         if (currentPath === '/' || currentPath === '/index.html') {
-            this.indexPage = new this.IndexPage(this.contentLoader, this.localization, this.config);
+            // Загружаем IndexPage
+            const IndexPageModule = await dynamicLoader.loadModule('/assets/js/index/IndexPage.js');
+            const IndexPage = IndexPageModule.IndexPage;
+            this.indexPage = new IndexPage(this.contentLoader, this.localization, this.config);
             await this.indexPage.render();
             this.setupMainPage();
         } else {
-            this.fileManager = new this.FileManager(this.contentLoader, this.localization, this.config);
+            // Загружаем FileManager
+            const FileManagerModule = await dynamicLoader.loadModule('/assets/js/filemanager/FileManager.js');
+            const FileManager = FileManagerModule.FileManager;
+            this.fileManager = new FileManager(this.contentLoader, this.localization, this.config);
             await this.fileManager.render(currentPath);
             this.setupFileManagerEvents();
         }
@@ -79,8 +70,9 @@ class App {
         this.setupGlobalFunctions();
         this.setupYear();
         
-        // Выводим статистику кеша в консоль (для отладки)
-        console.log('Cache stats:', cacheManager.getCacheStats());
+        // Выводим статистику кеша в консоль
+        const stats = cacheManager.getCacheStats();
+        console.log('Cache stats:', stats);
     }
 
     setupHeader() {
@@ -323,14 +315,15 @@ class App {
         
         window.copyToClipboard = this.UIHelper.copyToClipboard;
         
-        // Добавляем глобальную функцию для очистки кеша
+        // Глобальная функция для очистки кеша
         window.clearCache = () => {
             cacheManager.clearAll();
+            dynamicLoader.clearModuleCache();
             alert('Cache cleared! Page will reload.');
             window.location.reload();
         };
         
-        // Добавляем глобальную функцию для просмотра статистики кеша
+        // Глобальная функция для просмотра статистики кеша
         window.showCacheStats = () => {
             const stats = cacheManager.getCacheStats();
             console.table(stats);

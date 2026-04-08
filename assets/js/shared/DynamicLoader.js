@@ -4,13 +4,14 @@ export class DynamicLoader {
     constructor() {
         this.loadedModules = new Map();
         this.loadingPromises = new Map();
+        this.moduleCache = new Map();
     }
 
-    async loadScript(url, moduleName = null) {
+    async loadModule(url, baseUrl = null) {
         // Проверяем, загружен ли уже модуль
-        if (moduleName && this.loadedModules.has(moduleName)) {
-            console.log(`Module already loaded: ${moduleName}`);
-            return this.loadedModules.get(moduleName);
+        if (this.moduleCache.has(url)) {
+            console.log(`Module already loaded: ${url}`);
+            return this.moduleCache.get(url);
         }
         
         // Проверяем, не загружается ли уже модуль
@@ -19,133 +20,159 @@ export class DynamicLoader {
             return this.loadingPromises.get(url);
         }
         
-        const loadPromise = this._loadScriptInternal(url, moduleName);
+        const loadPromise = this._loadModuleInternal(url, baseUrl);
         this.loadingPromises.set(url, loadPromise);
         
         try {
             const result = await loadPromise;
+            this.moduleCache.set(url, result);
             return result;
         } finally {
             this.loadingPromises.delete(url);
         }
     }
     
-    async _loadScriptInternal(url, moduleName) {
+    async _loadModuleInternal(url, baseUrl = null) {
         try {
             // Проверяем кеш
-            const cachedCode = await cacheManager.getJS(url);
+            let code = await cacheManager.getJS(url);
+            let fromCache = true;
             
-            let code;
-            if (cachedCode) {
-                console.log(`Using cached JS: ${url}`);
-                code = cachedCode;
-            } else {
-                console.log(`Fetching JS: ${url}`);
+            if (!code) {
+                console.log(`Fetching JS module: ${url}`);
                 const response = await fetch(url);
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status} for ${url}`);
                 }
                 code = await response.text();
+                fromCache = false;
                 
                 // Сохраняем в кеш
                 await cacheManager.setJS(url, code);
+            } else {
+                console.log(`Using cached JS module: ${url}`);
             }
             
-            // Выполняем код
-            const module = { exports: {} };
-            const exports = {};
+            // Получаем директорию текущего модуля для разрешения относительных путей
+            const moduleDir = url.substring(0, url.lastIndexOf('/') + 1);
             
-            // Создаём функцию-модуль
-            const moduleFunction = new Function('exports', 'require', 'module', '__filename', '__dirname', code);
+            // Создаём функцию-модуль с поддержкой import
+            const moduleFunction = new Function(
+                'exports',
+                'require',
+                'module',
+                '__filename',
+                '__dirname',
+                'import',
+                code + '\n return module.exports;'
+            );
             
-            // Временная заглушка для require
-            const customRequire = (path) => {
+            const moduleObj = { exports: {} };
+            
+            // Создаём require функцию для разрешения зависимостей
+            const customRequire = async (path) => {
+                let resolvedPath;
+                
                 if (path.startsWith('./') || path.startsWith('../')) {
-                    // Относительный путь - загружаем как модуль
-                    const baseUrl = url.substring(0, url.lastIndexOf('/') + 1);
-                    const fullPath = new URL(path, baseUrl).href;
-                    return this.loadScript(fullPath);
+                    // Относительный путь
+                    resolvedPath = new URL(path, moduleDir).href;
+                } else if (path.startsWith('/')) {
+                    // Абсолютный путь
+                    resolvedPath = path;
+                } else {
+                    // Имя модуля (не поддерживается в браузере)
+                    throw new Error(`Cannot resolve module "${path}" - only relative paths are supported`);
                 }
-                // Встроенные модули или node_modules
-                throw new Error(`Cannot require "${path}" in browser environment`);
+                
+                // Убираем query параметры и хеш
+                resolvedPath = resolvedPath.split('?')[0].split('#')[0];
+                
+                // Загружаем модуль
+                const importedModule = await this.loadModule(resolvedPath, moduleDir);
+                return importedModule;
             };
             
-            moduleFunction(exports, customRequire, module, url, url);
+            // Создаём функцию import для ES модулей
+            const customImport = async (path) => {
+                let resolvedPath;
+                
+                if (path.startsWith('./') || path.startsWith('../')) {
+                    resolvedPath = new URL(path, moduleDir).href;
+                } else if (path.startsWith('/')) {
+                    resolvedPath = path;
+                } else {
+                    throw new Error(`Cannot resolve module "${path}" - only relative paths are supported`);
+                }
+                
+                resolvedPath = resolvedPath.split('?')[0].split('#')[0];
+                return await this.loadModule(resolvedPath, moduleDir);
+            };
             
-            const result = module.exports || exports;
+            // Выполняем модуль
+            const result = moduleFunction(
+                moduleObj.exports,
+                customRequire,
+                moduleObj,
+                url,
+                moduleDir,
+                customImport
+            );
             
-            if (moduleName) {
-                this.loadedModules.set(moduleName, result);
+            const exports = moduleObj.exports;
+            
+            if (!fromCache) {
+                console.log(`JS module loaded and cached: ${url}`);
+            } else {
+                console.log(`JS module loaded from cache: ${url}`);
             }
             
-            console.log(`JS loaded successfully: ${url}`);
-            return result;
+            return exports;
             
         } catch (error) {
-            console.error(`Error loading JS ${url}:`, error);
+            console.error(`Error loading module ${url}:`, error);
             throw error;
         }
     }
     
-    async loadModule(url) {
-        // Для ES модулей используем динамический импорт с кешем
+    async loadScript(url) {
+        // Для обычных скриптов (не ES модулей)
         const cachedCode = await cacheManager.getJS(url);
         
-        if (cachedCode && !this.shouldForceFetch(url)) {
-            console.log(`Using cached ES module: ${url}`);
-            // Создаём blob URL из кешированного кода
-            const blob = new Blob([cachedCode], { type: 'application/javascript' });
-            const blobUrl = URL.createObjectURL(blob);
-            try {
-                const module = await import(blobUrl);
-                URL.revokeObjectURL(blobUrl);
-                return module;
-            } catch (error) {
-                console.error(`Error executing cached module ${url}:`, error);
-                URL.revokeObjectURL(blobUrl);
-                // При ошибке загружаем заново
-                return this._fetchAndCacheModule(url);
+        return new Promise((resolve, reject) => {
+            if (cachedCode) {
+                console.log(`Using cached script: ${url}`);
+                try {
+                    // Выполняем кешированный код
+                    const script = document.createElement('script');
+                    script.textContent = cachedCode;
+                    document.head.appendChild(script);
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
+            } else {
+                console.log(`Fetching script: ${url}`);
+                const script = document.createElement('script');
+                script.src = url;
+                script.onload = () => {
+                    // Сохраняем в кеш после загрузки
+                    fetch(url)
+                        .then(response => response.text())
+                        .then(code => cacheManager.setJS(url, code))
+                        .catch(console.error);
+                    resolve();
+                };
+                script.onerror = reject;
+                document.head.appendChild(script);
             }
-        }
-        
-        return this._fetchAndCacheModule(url);
-    }
-    
-    async _fetchAndCacheModule(url) {
-        console.log(`Fetching ES module: ${url}`);
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status} for ${url}`);
-        }
-        const code = await response.text();
-        
-        // Сохраняем в кеш
-        await cacheManager.setJS(url, code);
-        
-        // Выполняем модуль
-        const blob = new Blob([code], { type: 'application/javascript' });
-        const blobUrl = URL.createObjectURL(blob);
-        try {
-            const module = await import(blobUrl);
-            URL.revokeObjectURL(blobUrl);
-            return module;
-        } catch (error) {
-            URL.revokeObjectURL(blobUrl);
-            throw error;
-        }
-    }
-    
-    shouldForceFetch(url) {
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('cache') === 'false') {
-            return true;
-        }
-        return false;
+        });
     }
     
     preloadScripts(urls) {
         urls.forEach(url => {
-            if (cacheManager.getJS(url)) {
+            // Проверяем, есть ли уже в кеше
+            const cached = cacheManager.getJS(url);
+            if (cached) {
                 console.log(`JS already cached: ${url}`);
             } else {
                 console.log(`Preloading JS: ${url}`);
@@ -155,6 +182,13 @@ export class DynamicLoader {
                     .catch(error => console.error(`Preload failed for ${url}:`, error));
             }
         });
+    }
+    
+    clearModuleCache() {
+        this.moduleCache.clear();
+        this.loadedModules.clear();
+        this.loadingPromises.clear();
+        console.log('Module cache cleared');
     }
 }
 
