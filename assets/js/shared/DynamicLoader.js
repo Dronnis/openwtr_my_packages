@@ -4,7 +4,7 @@ export class DynamicLoader {
     constructor() {
         this.loadedModules = new Map();
         this.loadingPromises = new Map();
-        this.moduleRegistry = new Map();
+        this.moduleExports = new Map();
     }
 
     async loadModule(url) {
@@ -12,9 +12,9 @@ export class DynamicLoader {
         const normalizedUrl = url.split('?')[0].split('#')[0];
         
         // Проверяем, загружен ли уже модуль
-        if (this.moduleRegistry.has(normalizedUrl)) {
+        if (this.moduleExports.has(normalizedUrl)) {
             console.log(`Module already loaded: ${normalizedUrl}`);
-            return this.moduleRegistry.get(normalizedUrl);
+            return this.moduleExports.get(normalizedUrl);
         }
         
         // Проверяем, не загружается ли уже модуль
@@ -28,7 +28,7 @@ export class DynamicLoader {
         
         try {
             const result = await loadPromise;
-            this.moduleRegistry.set(normalizedUrl, result);
+            this.moduleExports.set(normalizedUrl, result);
             return result;
         } finally {
             this.loadingPromises.delete(normalizedUrl);
@@ -64,113 +64,137 @@ export class DynamicLoader {
         // Получаем директорию модуля
         const moduleDir = url.substring(0, url.lastIndexOf('/') + 1);
         
-        // Обрабатываем код - заменяем импорты на загрузку из реестра
-        const processedCode = this.processImports(code, moduleDir, url);
-        
-        // Создаём уникальный ID для модуля
-        const moduleId = 'mod_' + btoa(url).replace(/[^a-zA-Z0-9]/g, '_');
+        // Обрабатываем код, заменяя импорты на динамические загрузки
+        const processedCode = await this.processModuleCode(code, moduleDir, url);
         
         // Выполняем модуль и получаем экспорты
-        const exports = await this.executeModule(processedCode, moduleId, url);
+        const exports = await this.executeModule(processedCode, url);
         
         return exports;
     }
     
-    processImports(code, moduleDir, moduleUrl) {
+    async processModuleCode(code, moduleDir, moduleUrl) {
         // Находим все import statements
         const importRegex = /import\s+{([^}]+)}\s+from\s+['"]([^'"]+)['"]/g;
         const importDefaultRegex = /import\s+(\w+)\s+from\s+['"]([^'"]+)['"]/g;
         const importAllRegex = /import\s+\*\s+as\s+(\w+)\s+from\s+['"]([^'"]+)['"]/g;
         
         let processedCode = code;
+        const importsToLoad = [];
         
-        // Обрабатываем named imports
-        processedCode = processedCode.replace(importRegex, (match, imports, importPath) => {
-            const resolvedPath = this.resolvePath(importPath, moduleDir);
-            const importNames = imports.split(',').map(i => i.trim());
-            const varName = `__mod_${btoa(resolvedPath).replace(/[^a-zA-Z0-9]/g, '_')}`;
-            
-            // Создаём переменные для импортированных значений
-            const declarations = importNames.map(name => {
-                if (name.includes(' as ')) {
-                    const [original, alias] = name.split(' as ');
-                    return `let ${alias} = ${varName}.${original};`;
-                }
-                return `let ${name} = ${varName}.${name};`;
-            }).join('\n    ');
-            
-            return `// Import from ${resolvedPath}
-    const ${varName} = window.__moduleRegistry['${resolvedPath}'] || (async () => {
-        const mod = await window.dynamicLoader.loadModule('${resolvedPath}');
-        window.__moduleRegistry['${resolvedPath}'] = mod;
-        return mod;
-    })();
-    ${declarations}`;
-        });
-        
-        // Обрабатываем default imports
-        processedCode = processedCode.replace(importDefaultRegex, (match, importName, importPath) => {
-            const resolvedPath = this.resolvePath(importPath, moduleDir);
-            const varName = `__mod_${btoa(resolvedPath).replace(/[^a-zA-Z0-9]/g, '_')}`;
-            
-            return `// Import from ${resolvedPath}
-    const ${importName} = (async () => {
-        const mod = await window.dynamicLoader.loadModule('${resolvedPath}');
-        return mod.default || mod;
-    })();`;
-        });
-        
-        // Обрабатываем namespace imports
-        processedCode = processedCode.replace(importAllRegex, (match, importName, importPath) => {
-            const resolvedPath = this.resolvePath(importPath, moduleDir);
-            
-            return `// Import from ${resolvedPath}
-    const ${importName} = await window.dynamicLoader.loadModule('${resolvedPath}');`;
-        });
-        
-        // Оборачиваем код в async функцию для поддержки await
-        return `(async function() {
-    const __exports = {};
-    ${processedCode}
-    
-    // Обрабатываем export statements
-    const exportRegex = /export\\s+{([^}]+)}/g;
-    const exportDefaultRegex = /export\\s+default\\s+(\\w+)/g;
-    const exportConstRegex = /export\\s+(?:const|let|var)\\s+(\\w+)\\s*=\\s*([^;]+)/g;
-    const exportFunctionRegex = /export\\s+function\\s+(\\w+)\\s*\\(([^)]*)\\)\\s*{/g;
-    
-    // Восстанавливаем export statements
-    let exportCode = \`${processedCode.replace(/`/g, '\\`')}\`;
-    
-    // Находим все экспорты
-    let exportMatch;
-    while ((exportMatch = exportConstRegex.exec(exportCode)) !== null) {
-        const [full, name, value] = exportMatch;
-        __exports[name] = eval(value);
-    }
-    
-    while ((exportMatch = exportFunctionRegex.exec(exportCode)) !== null) {
-        const [full, name] = exportMatch;
-        __exports[name] = eval(name);
-    }
-    
-    while ((exportMatch = exportDefaultRegex.exec(exportCode)) !== null) {
-        __exports.default = eval(exportMatch[1]);
-    }
-    
-    while ((exportMatch = exportRegex.exec(exportCode)) !== null) {
-        const exports_list = exportMatch[1].split(',').map(e => e.trim());
-        for (const exp of exports_list) {
-            const [name, alias] = exp.includes(' as ') ? exp.split(' as ') : [exp, exp];
-            __exports[alias] = eval(name);
+        // Собираем все импорты
+        let match;
+        while ((match = importRegex.exec(code)) !== null) {
+            const imports = match[1].split(',').map(i => i.trim());
+            const importPath = match[2];
+            const resolvedPath = this.resolveImportPath(importPath, moduleDir);
+            importsToLoad.push({
+                type: 'named',
+                imports: imports,
+                importPath,
+                resolvedPath
+            });
         }
+        
+        while ((match = importDefaultRegex.exec(code)) !== null) {
+            const importName = match[1];
+            const importPath = match[2];
+            const resolvedPath = this.resolveImportPath(importPath, moduleDir);
+            importsToLoad.push({
+                type: 'default',
+                importName,
+                importPath,
+                resolvedPath
+            });
+        }
+        
+        while ((match = importAllRegex.exec(code)) !== null) {
+            const importName = match[1];
+            const importPath = match[2];
+            const resolvedPath = this.resolveImportPath(importPath, moduleDir);
+            importsToLoad.push({
+                type: 'all',
+                importName,
+                importPath,
+                resolvedPath
+            });
+        }
+        
+        if (importsToLoad.length === 0) {
+            return code;
+        }
+        
+        // Загружаем все зависимости
+        const loadedDeps = new Map();
+        for (const imp of importsToLoad) {
+            if (!loadedDeps.has(imp.resolvedPath)) {
+                try {
+                    const depModule = await this.loadModule(imp.resolvedPath);
+                    loadedDeps.set(imp.resolvedPath, depModule);
+                } catch (error) {
+                    console.error(`Failed to load dependency ${imp.resolvedPath}:`, error);
+                    throw error;
+                }
+            }
+        }
+        
+        // Строим новый код с уже загруженными зависимостями
+        let newCode = '// Processed by DynamicLoader\n';
+        newCode += '(function() {\n';
+        newCode += '  const __exports = {};\n';
+        newCode += '  const __modules = window.__dynModules || {};\n';
+        newCode += '  window.__dynModules = __modules;\n\n';
+        
+        // Добавляем переменные для импортов
+        for (const imp of importsToLoad) {
+            const depModule = loadedDeps.get(imp.resolvedPath);
+            const moduleVar = `__mod_${imp.resolvedPath.replace(/[^a-zA-Z0-9]/g, '_')}`;
+            
+            newCode += `  const ${moduleVar} = __modules['${imp.resolvedPath}'] || (() => {\n`;
+            newCode += `    const m = ${JSON.stringify(depModule)};\n`;
+            newCode += `    __modules['${imp.resolvedPath}'] = m;\n`;
+            newCode += `    return m;\n`;
+            newCode += `  })();\n`;
+            
+            if (imp.type === 'named') {
+                for (const importName of imp.imports) {
+                    if (depModule[importName]) {
+                        newCode += `  const ${importName} = ${moduleVar}.${importName};\n`;
+                    }
+                }
+            } else if (imp.type === 'default') {
+                newCode += `  const ${imp.importName} = ${moduleVar}.default || ${moduleVar};\n`;
+            } else if (imp.type === 'all') {
+                newCode += `  const ${imp.importName} = ${moduleVar};\n`;
+            }
+        }
+        
+        // Удаляем оригинальные import statements
+        let codeWithoutImports = code;
+        for (const imp of importsToLoad) {
+            const patterns = [
+                new RegExp(`import\\s+{${imp.imports.map(i => i.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join(',')}}\\s+from\\s+['"]${imp.importPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}['"]`, 'g'),
+                new RegExp(`import\\s+${imp.importName}\\s+from\\s+['"]${imp.importPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}['"]`, 'g'),
+                new RegExp(`import\\s+\\*\\s+as\\s+${imp.importName}\\s+from\\s+['"]${imp.importPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}['"]`, 'g')
+            ];
+            for (const pattern of patterns) {
+                codeWithoutImports = codeWithoutImports.replace(pattern, '');
+            }
+        }
+        
+        // Добавляем оригинальный код
+        newCode += '\n  // Original module code\n';
+        newCode += codeWithoutImports;
+        
+        // Добавляем экспорт
+        newCode += '\n\n  // Export handling\n';
+        newCode += '  return __exports;\n';
+        newCode += '})();\n';
+        
+        return newCode;
     }
     
-    return __exports;
-})()`;
-    }
-    
-    resolvePath(importPath, moduleDir) {
+    resolveImportPath(importPath, moduleDir) {
         if (importPath.startsWith('/')) {
             return importPath;
         }
@@ -192,65 +216,32 @@ export class DynamicLoader {
         return importPath;
     }
     
-    async executeModule(code, moduleId, url) {
-        return new Promise((resolve, reject) => {
-            // Регистрируем глобальные объекты
-            window.__moduleRegistry = window.__moduleRegistry || {};
-            window.dynamicLoader = this;
+    async executeModule(code, url) {
+        // Создаём функцию из кода
+        const moduleFunction = new Function('exports', 'require', 'module', code);
+        
+        const moduleObj = { exports: {} };
+        
+        // Создаём require функцию
+        const customRequire = async (path) => {
+            const resolvedPath = this.resolveImportPath(path, url.substring(0, url.lastIndexOf('/') + 1));
+            return await this.loadModule(resolvedPath);
+        };
+        
+        try {
+            const result = moduleFunction(moduleObj.exports, customRequire, moduleObj);
+            const exports = result || moduleObj.exports;
             
-            // Создаём скрипт
-            const script = document.createElement('script');
-            script.id = moduleId;
+            // Обрабатываем экспорты
+            if (exports.default) {
+                return exports.default;
+            }
             
-            // Оборачиваем код в IIFE
-            const wrappedCode = `
-                (function() {
-                    window.__moduleRegistry['${url}'] = (${code}).then(exports => {
-                        window.__moduleRegistry['${url}'] = exports;
-                        return exports;
-                    }).catch(error => {
-                        console.error('Module error:', error);
-                        delete window.__moduleRegistry['${url}'];
-                        throw error;
-                    });
-                })();
-            `;
-            
-            script.textContent = wrappedCode;
-            
-            script.onerror = (error) => {
-                reject(new Error(`Failed to load module ${url}: ${error}`));
-            };
-            
-            // Ждём выполнения модуля
-            const checkInterval = setInterval(async () => {
-                const moduleExports = window.__moduleRegistry[url];
-                if (moduleExports && typeof moduleExports.then === 'function') {
-                    try {
-                        const result = await moduleExports;
-                        clearInterval(checkInterval);
-                        resolve(result);
-                    } catch (error) {
-                        clearInterval(checkInterval);
-                        reject(error);
-                    }
-                } else if (moduleExports && !moduleExports.then) {
-                    clearInterval(checkInterval);
-                    resolve(moduleExports);
-                }
-            }, 10);
-            
-            // Добавляем скрипт на страницу
-            document.head.appendChild(script);
-            
-            // Таймаут на случай зависания
-            setTimeout(() => {
-                clearInterval(checkInterval);
-                if (!window.__moduleRegistry[url]) {
-                    reject(new Error(`Timeout loading module ${url}`));
-                }
-            }, 30000);
-        });
+            return exports;
+        } catch (error) {
+            console.error(`Error executing module ${url}:`, error);
+            throw error;
+        }
     }
     
     async getFromIndexedDB(url) {
@@ -362,8 +353,10 @@ export class DynamicLoader {
     clearModuleCache() {
         this.loadedModules.clear();
         this.loadingPromises.clear();
-        this.moduleRegistry.clear();
-        window.__moduleRegistry = {};
+        this.moduleExports.clear();
+        if (window.__dynModules) {
+            window.__dynModules = {};
+        }
         console.log('Module cache cleared');
     }
 }
