@@ -1,5 +1,5 @@
-import { loadingManager } from '/assets/js/shared/LoadingManager.js';
-import { cacheManager } from '/assets/js/shared/CacheManager.js';
+import { cacheManager } from '../shared/CacheManager.js';
+import { loadingManager } from '../shared/LoadingManager.js';
 
 export class ContentLoader {
     constructor(localization) {
